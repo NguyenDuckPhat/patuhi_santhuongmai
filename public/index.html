@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2ndtech.vn — Chợ công nghệ cũ đáng tin</title>
+  <link rel="stylesheet" href="2ndtech.css?v=12" />
+</head>
+<body>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></symbol>
+  <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.59-3.68.56.56 0 0 0 .82 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.49 5.31a2 2 0 0 1-3 .02L5 15c-1.5-1.5-3-3.2-3-5.5"/></symbol>
+  <symbol id="icon-shop" viewBox="0 0 24 24"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.77 10.31a1.12 1.12 0 0 0-1.54 0 2.5 2.5 0 0 1-3.46 0 1.12 1.12 0 0 0-1.54 0 2.5 2.5 0 0 1-3.46 0 1.12 1.12 0 0 0-1.54 0 2.5 2.5 0 0 1-3.77-3.25l2.88-4.18A2 2 0 0 1 7 2h10a2 2 0 0 1 1.65.87l2.9 4.2a2.5 2.5 0 0 1-3.78 3.24"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="community-icon-1" viewBox="0 0 24 24"><path d="M16.25 7.76a6 6 0 0 1 0 8.48"/><path d="M19.08 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.75 16.24a6 6 0 0 1 0-8.48"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="community-icon-2" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol>
+  <symbol id="community-icon-3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></symbol>
+  <symbol id="community-icon-4" viewBox="0 0 24 24"><path d="M2.99 16.34a2 2 0 0 1 .1 1.17l-1.07 3.29a1 1 0 0 0 1.24 1.17l3.41-1a2 2 0 0 1 1.1.09 10 10 0 1 0-4.78-4.72"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="community-icon-5" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="community-icon-6" viewBox="0 0 24 24"><path d="M21.54 15H17a2 2 0 0 0-2 2v4.54"/><path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17"/><path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05"/><circle cx="12" cy="12" r="10"/></symbol>
+  <symbol id="community-icon-7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+  <symbol id="community-icon-8" viewBox="0 0 24 24"><path d="M2.99 16.34a2 2 0 0 1 .1 1.17l-1.07 3.29a1 1 0 0 0 1.24 1.17l3.41-1a2 2 0 0 1 1.1.09 10 10 0 1 0-4.78-4.72"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></symbol>
+  <symbol id="community-icon-9" viewBox="0 0 24 24"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/></symbol>
+  <symbol id="community-icon-10" viewBox="0 0 24 24"><path d="M2.99 16.34a2 2 0 0 1 .1 1.17l-1.07 3.29a1 1 0 0 0 1.24 1.17l3.41-1a2 2 0 0 1 1.1.09 10 10 0 1 0-4.78-4.72"/></symbol>
+  <symbol id="community-icon-11" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></symbol>
+  <symbol id="community-icon-12" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
+<div class="site-shell">
+  <div data-include="partials/header.html"></div>
+  <div id="main-content">
+  <main class="page-main">
+    <section class="hero"><div class="hero-inner">
+      <div class="hero-decoration hero-decoration--left"></div><div class="hero-decoration hero-decoration--right"></div>
+      <div class="hero-content">
+        <div class="hero-copy"><span class="hero-eyebrow">Chợ công nghệ cũ Việt Nam</span><h1>Máy tốt, gần bạn,<br />mua bán rõ ràng.</h1><p>Tìm nhanh điện thoại, laptop, phụ kiện cũ có ảnh rõ và hồ sơ người bán dễ kiểm tra.</p></div>
+        <form class="search-form" action="/tim-kiem" method="GET">
+          <label class="search-query"><svg viewBox="0 0 24 24"><use href="#icon-search"/></svg><span class="sr-only">Từ khóa tìm kiếm</span><input type="text" placeholder="Tìm iPhone, MacBook, RAM 16GB..." name="q" /></label>
+          <label class="search-select"><svg viewBox="0 0 24 24"><use href="#icon-pin"/></svg><span class="sr-only">Khu vực</span><select aria-label="Khu vực" name="provinceCode"><option value="">Toàn quốc</option><option value="89">An Giang</option><option value="77">Bà Rịa - Vũng Tàu</option><option value="74">Bình Dương</option><option value="70">Bình Phước</option><option value="60">Bình Thuận</option><option value="52">Bình Định</option><option value="95">Bạc Liêu</option><option value="24">Bắc Giang</option><option value="6">Bắc Kạn</option><option value="27">Bắc Ninh</option><option value="83">Bến Tre</option><option value="4">Cao Bằng</option><option value="96">Cà Mau</option><option value="92">Cần Thơ</option><option value="64">Gia Lai</option><option value="17">Hoà Bình</option><option value="2">Hà Giang</option><option value="35">Hà Nam</option><option value="1">Hà Nội</option><option value="42">Hà Tĩnh</option><option value="33">Hưng Yên</option><option value="30">Hải Dương</option><option value="31">Hải Phòng</option><option value="93">Hậu Giang</option><option value="56">Khánh Hòa</option><option value="91">Kiên Giang</option><option value="62">Kon Tum</option><option value="12">Lai Châu</option><option value="80">Long An</option><option value="10">Lào Cai</option><option value="68">Lâm Đồng</option><option value="20">Lạng Sơn</option><option value="36">Nam Định</option><option value="40">Nghệ An</option><option value="37">Ninh Bình</option><option value="58">Ninh Thuận</option><option value="25">Phú Thọ</option><option value="54">Phú Yên</option><option value="44">Quảng Bình</option><option value="49">Quảng Nam</option><option value="51">Quảng Ngãi</option><option value="22">Quảng Ninh</option><option value="45">Quảng Trị</option><option value="94">Sóc Trăng</option><option value="14">Sơn La</option><option value="38">Thanh Hóa</option><option value="79">Thành phố Hồ Chí Minh</option><option value="34">Thái Bình</option><option value="19">Thái Nguyên</option><option value="46">Thừa Thiên Huế</option><option value="82">Tiền Giang</option><option value="84">Trà Vinh</option><option value="8">Tuyên Quang</option><option value="72">Tây Ninh</option><option value="86">Vĩnh Long</option><option value="26">Vĩnh Phúc</option><option value="15">Yên Bái</option><option value="11">Điện Biên</option><option value="48">Đà Nẵng</option><option value="66">Đắk Lắk</option><option value="67">Đắk Nông</option><option value="75">Đồng Nai</option><option value="87">Đồng Tháp</option></select></label>
+          <select class="search-category" aria-label="Danh mục" name="cat"><option value="">Tất cả danh mục</option><option value="dien-thoai">Điện thoại</option><option value="laptop">Laptop</option><option value="may-tinh-bang">Máy tính bảng</option><option value="loa-va-tai-nghe">Loa &amp; Tai nghe</option><option value="may-tinh-de-ban">Máy tính để bàn</option><option value="camera-va-thiet-bi-an-ninh">Camera &amp; thiết bị an ninh</option><option value="may-choi-game-va-tay-cam">Máy chơi game &amp; tay cầm</option><option value="may-anh-may-quay-phu-kien">Máy ảnh, máy quay</option><option value="may-doc-sach">Máy đọc sách</option><option value="nha-thong-minh">Thiết bị nhà thông minh</option><option value="may-chieu-tivi">Máy chiếu, tivi</option><option value="thiet-bi-deo-thong-minh">Thiết bị đeo thông minh</option><option value="thiet-bi-mang">Thiết bị mạng</option><option value="phu-kien-may-tinh">Phụ kiện máy tính</option><option value="linh-kien-pc-laptop">Linh kiện PC / Laptop</option><option value="camera-giam-sat-hanh-trinh">Camera giám sát/ hành trình</option><option value="may-choi-game">Thiết bị chơi game, phụ kiện</option><option value="phu-kien-chuot-sac-man-hinh-ghe">Phụ kiện (Màn hình, chuột..)</option><option value="linh-kien-ram-card">Linh kiện ( ram, card…)</option></select>
+          <button class="search-submit" type="submit">Tìm kiếm</button>
+        </form>
+        <div class="quick-search"><span>Tìm nhanh</span><a href="https://2ndtech.vn/tim-kiem?q=iPhone">iPhone cũ</a><a href="https://2ndtech.vn/tim-kiem?q=MacBook%20M1">MacBook M1</a><a href="https://2ndtech.vn/tim-kiem?q=laptop%20v%C4%83n%20ph%C3%B2ng">Laptop văn phòng</a><a href="https://2ndtech.vn/tim-kiem?q=AirPods">AirPods</a><a href="https://2ndtech.vn/tim-kiem?q=m%C3%A0n%20h%C3%ACnh%2027">Màn hình 27 inch</a></div>
+      </div>
+      <section class="category-explorer" aria-label="Khám phá danh mục">
+        <div class="category-heading"><div class="category-heading__copy"><h2>Danh mục phổ biến</h2><p>Chọn nhanh nhóm thiết bị trước khi xem tin.</p></div><button class="category-more" type="button">Xem thêm<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-chevron"/></svg></button></div>
+        <div class="category-strip" aria-label="Danh mục nổi bật">
+          <a class="category-card" href="https://2ndtech.vn/mua-ban/dien-thoai-cu"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp5hkauy00022io5ea44q671-1efa1333-80c9-40cf-8e32-5b474a2c5ee8.webp" alt="" /></span><span class="category-card__name" style="width:68.16px">Điện thoại</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban/laptop-cu"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp5hkaws000o2io5i5voyz88-97b1c97d-eec8-4beb-9eb9-4a2bf4e42e4d.webp" alt="" /></span><span class="category-card__name" style="width:46.02px">Laptop</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban/may-tinh-bang-cu"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp5hkay1001c2io5yrqv6hqg-376326fa-7643-4903-8472-579718967789.webp" alt="" /></span><span class="category-card__name" style="width:95.88px">Máy tính bảng</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=loa-va-tai-nghe"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp5hkayf001m2io5s69v6k7j-8f6a7301-bc8f-49ff-8f75-ca02f01b126d.webp" alt="" /></span><span class="category-card__name" style="width:98.27px">Loa &amp; Tai nghe</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=may-tinh-de-ban"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6m003r2mnw2fox4qr7-d010f170-93bd-4823-a853-1d5a70ee0c77.webp" alt="" /></span><span class="category-card__name" style="width:107.36px">Máy tính để bàn</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=camera-va-thiet-bi-an-ninh"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6n003s2mnwp10mahvk-2646d275-ee65-4d96-adaf-668383526caf.webp" alt="" /></span><span class="category-card__name" style="width:114px;height:35px">Camera &amp; thiết bị an ninh</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=may-choi-game-va-tay-cam"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6p003t2mnwuwp9gcsb-a9a138c9-37d0-4d38-8b1a-2f6f4f2b6774.webp" alt="" /></span><span class="category-card__name">Máy chơi game &amp; tay cầm</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=may-anh-may-quay-phu-kien"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6p003u2mnwrbbf9asx-2e2dd7f4-1050-4c33-9cda-097b4ac5a3a3.webp" alt="" /></span><span class="category-card__name">Máy ảnh, máy quay</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=may-doc-sach"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6r003v2mnwudj8gsht-99e02036-bb76-49d5-af59-cd2b3a1caf7a.webp" alt="" /></span><span class="category-card__name" style="width:89.17px">Máy đọc sách</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=nha-thong-minh"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6s003w2mnwcdx29q9g-0e9b8302-0679-46c3-b1b2-e458937106d3.webp" alt="" /></span><span class="category-card__name">Thiết bị nhà thông minh</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=may-chieu-tivi"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6t003x2mnw5vbp4q2j-143eef4b-e537-414b-a306-b6e20e328ce5.webp" alt="" /></span><span class="category-card__name" style="width:96.16px">Máy chiếu, tivi</span></a>
+          <a class="category-card" href="https://2ndtech.vn/mua-ban?cat=thiet-bi-deo-thong-minh"><span class="category-card__image"><img src="https://cdn.2ndtech.vn/catalog/categories/cmp9b5p6u003y2mnw0cy88tym-7de4eb96-ee36-4e53-a806-f12cdf514eb3.webp" alt="" /></span><span class="category-card__name">Thiết bị đeo thông minh</span></a>
+        </div>
+      </section>
+    </div></section>
+    <section class="market-section"><div class="market-inner">
+      <div class="market-title"><div><span class="market-kicker">Sàn mới hôm nay</span><h2>Hàng thật để xem. Người thật để hỏi.</h2></div><p>Lướt tin đã duyệt và bắt nhịp cộng đồng trong cùng một màn hình.</p></div>
+      <div class="market-columns">
+        <section class="listing-panel" aria-label="Tin mới dành cho bạn">
+          <div class="listing-panel__heading"><div><h2>Tin mới dành cho bạn</h2><p>Tin công nghệ cũ mới duyệt, có ảnh rõ, cấu hình và hồ sơ người bán dễ kiểm tra.</p></div><a href="https://2ndtech.vn/mua-ban">Xem tất cả</a></div>
+          <div class="listing-tabs"><button class="listing-tab is-active">Dành cho bạn</button><button class="listing-tab">Điện thoại</button><button class="listing-tab">Laptop</button><button class="listing-tab">Tablet</button><button class="listing-tab">Phụ kiện</button><button class="listing-tab">Camera</button><button class="listing-tab">Màn hình</button></div>
+          <div class="listing-filters"><a href="https://2ndtech.vn/mua-ban?sort=latest">Tin mới</a><a href="https://2ndtech.vn/mua-ban?maxPrice=5000000">Dưới 5 triệu</a><a href="https://2ndtech.vn/mua-ban?cat=dien-thoai">Điện thoại</a><a href="https://2ndtech.vn/mua-ban?cat=laptop">Laptop</a><a href="https://2ndtech.vn/shop">Shop công nghệ</a></div>
+          <div class="product-grid" id="product-grid"></div>
+        </section>
+        <aside class="market-sidebar"><div data-include="partials/community-feed.html"></div></aside>
+      </div>
+    </div></section>
+    <section class="trusted-shops">
+      <div class="trusted-shops__inner">
+        <div class="trusted-shops__heading">
+          <div><span class="market-kicker">Shop công nghệ</span><h2>Người bán có hồ sơ rõ.</h2></div>
+          <a class="trusted-shops__more" href="https://2ndtech.vn/shop">Xem thêm shop</a>
+        </div>
+        <div class="trusted-shops__grid">
+          <a class="trusted-shop-card" href="https://2ndtech.vn/shop/nguyen-tien-quy-r420n8ol">
+            <div class="trusted-shop-card__identity"><span class="trusted-shop-card__avatar">NG</span><span class="trusted-shop-card__name"><span>Nguyễn Tiến Quý</span><span>Đắk Lắk</span></span></div>
+            <div class="trusted-shop-card__badges"><span class="trusted-shop-card__badge trusted-shop-card__badge--shop">Shop</span><span class="trusted-shop-card__badge">Hồ sơ mới</span></div>
+          </a>
+          <a class="trusted-shop-card" href="https://2ndtech.vn/shop/liem-nguyen-u8fnsz9r">
+            <div class="trusted-shop-card__identity"><span class="trusted-shop-card__avatar">LI</span><span class="trusted-shop-card__name"><span>liêm nguyễn</span><span>TP Huế</span></span></div>
+            <div class="trusted-shop-card__badges"><span class="trusted-shop-card__badge trusted-shop-card__badge--shop">Shop</span><span class="trusted-shop-card__badge">Hồ sơ mới</span></div>
+          </a>
+          <a class="trusted-shop-card" href="https://2ndtech.vn/shop/thanh-binh-u23yk6du">
+            <div class="trusted-shop-card__identity"><span class="trusted-shop-card__avatar">TH</span><span class="trusted-shop-card__name"><span>Thanh Bình</span><span>Thành phố Hồ Chí Minh</span></span></div>
+            <div class="trusted-shop-card__badges"><span class="trusted-shop-card__badge trusted-shop-card__badge--shop">Shop</span><span class="trusted-shop-card__badge">Hồ sơ mới</span></div>
+          </a>
+          <a class="trusted-shop-card" href="https://2ndtech.vn/shop/vinhome-q9-s3806558">
+            <div class="trusted-shop-card__identity"><span class="trusted-shop-card__avatar">VI</span><span class="trusted-shop-card__name"><span>Vinhome Q9</span><span>Thành phố Hồ Chí Minh</span></span></div>
+            <div class="trusted-shop-card__badges"><span class="trusted-shop-card__badge trusted-shop-card__badge--shop">Shop</span><span class="trusted-shop-card__badge">Hồ sơ mới</span></div>
+          </a>
+        </div>
+      </div>
+    </section>
+    <section class="seller-cta-section">
+      <div class="seller-cta">
+        <div class="seller-cta__copy"><span class="market-kicker">Bạn có thiết bị không còn dùng?</span><h2>Đăng tin nhanh, gặp đúng người mua.</h2></div>
+        <div class="seller-cta__actions"><a class="seller-cta__post" href="https://2ndtech.vn/dang-tin">Đăng tin ngay</a><a class="seller-cta__shops" href="https://2ndtech.vn/shop">Xem danh bạ shop</a></div>
+      </div>
+    </section>
+  </main>
+  </div>
+  <div data-include="partials/footer.html"></div>
+</div>
+<script src="2ndtech.js?v=6" defer></script>
+</body>
+</html>
