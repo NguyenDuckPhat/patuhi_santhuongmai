@@ -2,9 +2,10 @@
   "name": "patuhi-santhuongmai",
   "version": "1.0.0",
   "private": true,
-  "description": "Promo banner landing page",
+  "description": "Sàn thương mại điện tử C2C Patuhi",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node ../server.js",
+    "dev": "node --watch ../server.js",
+    "test": "npm --prefix .. test"
   }
 }
