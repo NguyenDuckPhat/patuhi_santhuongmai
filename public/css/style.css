@@ -1,0 +1,214 @@
+/* Style chính cho Patuhi Marketplace */
+:root {
+  --primary-color: #ff8800;
+  --primary-hover: #e07700;
+  --secondary-color: #2c3e50;
+  --bg-light: #f8f9fa;
+  --card-radius: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* Navbar */
+.navbar-brand {
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--primary-color) !important;
+  letter-spacing: -0.5px;
+}
+
+.navbar-brand span {
+  color: var(--secondary-color);
+}
+
+.search-input-group .form-control {
+  border-top-left-radius: 25px;
+  border-bottom-left-radius: 25px;
+  border: 1px solid #ced4da;
+}
+
+.search-input-group .btn {
+  border-top-right-radius: 25px;
+  border-bottom-right-radius: 25px;
+}
+
+/* Category Grid */
+.category-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: var(--card-radius);
+  background: #fff;
+  border: 1px solid #eaeaea;
+  text-decoration: none;
+  color: #333;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  color: var(--primary-color);
+}
+
+.category-icon {
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+/* Product Cards */
+.product-card {
+  border-radius: var(--card-radius);
+  border: 1px solid #eaeaea;
+  background: #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.product-img-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 75%; /* Tỉ lệ 4:3 */
+  background: #f1f3f5;
+  overflow: hidden;
+}
+
+.product-img-wrapper img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.product-card:hover .product-img-wrapper img {
+  transform: scale(1.05);
+}
+
+.btn-favorite-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-favorite-icon:hover,
+.btn-favorite-icon.active {
+  background: #fff;
+  color: #e63946;
+}
+
+.product-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #d90429;
+}
+
+.condition-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* Chat Page */
+.chat-container {
+  height: calc(100vh - 180px);
+  min-height: 500px;
+  background: #fff;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  border: 1px solid #eaeaea;
+}
+
+.chat-list {
+  border-right: 1px solid #eaeaea;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.chat-conv-item {
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chat-conv-item:hover,
+.chat-conv-item.active {
+  background: #fff8f0;
+}
+
+.chat-messages {
+  overflow-y: auto;
+  height: calc(100% - 130px);
+  padding: 16px;
+  background: #fdfdfd;
+}
+
+.msg-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.msg-bubble.sent {
+  background: #ff8800;
+  color: #fff;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.msg-bubble.received {
+  background: #f1f3f5;
+  color: #333;
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+/* Admin Dashboard */
+.stat-card {
+  border-radius: var(--card-radius);
+  border: none;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.table-responsive {
+  border-radius: var(--card-radius);
+}

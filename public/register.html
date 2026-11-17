@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Ký Tài Khoản — Patuhi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+  <div class="container py-4" style="max-width: 480px;">
+    <div class="text-center mb-4">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2 text-decoration-none" href="/">
+        <i class="bi bi-shop-window text-warning fs-2"></i>
+        <span class="fs-2 fw-bold">PATUHI</span>
+      </a>
+      <p class="text-muted mt-1">Đăng ký tài khoản thành viên miễn phí</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-sm-5 bg-white">
+      <h4 class="fw-bold mb-4 text-center">Tạo Tài Khoản</h4>
+
+      <div id="register-alert" class="alert alert-danger d-none" role="alert"></div>
+
+      <form id="register-form" onsubmit="handleRegister(event)">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Họ và tên (*)</label>
+          <input type="text" id="full_name" class="form-control" placeholder="Nguyễn Văn A" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tên đăng nhập (*)</label>
+          <input type="text" id="username" class="form-control" placeholder="nguyenvana (chỉ chữ và số)" required minlength="3">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email (*)</label>
+          <input type="email" id="email" class="form-control" placeholder="email@example.com" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Số điện thoại</label>
+          <input type="tel" id="phone" class="form-control" placeholder="09xxxxxxxx">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Mật khẩu (*)</label>
+          <input type="password" id="password" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6">
+        </div>
+
+        <button type="submit" class="btn btn-warning w-100 fw-bold py-2 rounded-pill shadow-sm" id="btn-register">
+          Đăng Ký Tài Khoản
+        </button>
+      </form>
+
+      <div class="text-center mt-4 text-muted small">
+        Đã có tài khoản? <a href="/login" class="text-warning fw-bold text-decoration-none">Đăng nhập ngay</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/main.js"></script>
+  <script>
+    async function handleRegister(e) {
+      e.preventDefault();
+      const full_name = document.getElementById('full_name').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+
+      const alertBox = document.getElementById('register-alert');
+      const btn = document.getElementById('btn-register');
+
+      alertBox.classList.add('d-none');
+      btn.disabled = true;
+      btn.innerText = 'Đang xử lý...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, username, email, phone, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+          PatuhiApp.showToast('Đăng ký tài khoản thành công!', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 800);
+        } else {
+          alertBox.innerText = data.message || 'Đăng ký thất bại!';
+          alertBox.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerText = 'Đăng Ký Tài Khoản';
+        }
+      } catch (err) {
+        alertBox.innerText = 'Lỗi kết nối máy chủ.';
+        alertBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerText = 'Đăng Ký Tài Khoản';
+      }
+    }
+  </script>
+</body>
+</html>

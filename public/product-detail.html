@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi Tiết Sản Phẩm — Patuhi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .main-img-box {
+      width: 100%;
+      height: 420px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .main-img-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .thumb-img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      opacity: 0.7;
+      transition: all 0.2s;
+    }
+    .thumb-img.active, .thumb-img:hover {
+      border-color: var(--primary-color);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <i class="bi bi-shop-window text-warning fs-3"></i>
+        <span>PATUHI</span>
+      </a>
+      <div id="nav-auth-container" class="ms-auto"></div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="javascript:void(0)" id="breadcrumb-category" class="text-decoration-none text-muted">Danh mục</a></li>
+        <li class="breadcrumb-item active text-truncate" id="breadcrumb-title" style="max-width: 300px;">Chi tiết sản phẩm</li>
+      </ol>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="row g-4" id="product-content">
+      <!-- Loading State -->
+      <div class="col-12 text-center py-5" id="detail-loading">
+        <div class="spinner-border text-warning" role="status"></div>
+        <p class="mt-2 text-muted">Đang tải thông tin sản phẩm...</p>
+      </div>
+
+      <!-- Left Column: Gallery & Description -->
+      <div class="col-lg-8 d-none" id="col-left">
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+          <div class="main-img-box mb-3">
+            <img id="detail-main-img" src="" alt="Sản phẩm">
+          </div>
+          <div class="d-flex gap-2 overflow-auto pb-2" id="detail-thumbnails">
+            <!-- Thumbs -->
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <h5 class="fw-bold mb-3"><i class="bi bi-card-text text-warning me-2"></i>Mô tả chi tiết</h5>
+          <div id="detail-description" class="text-secondary" style="white-space: pre-line; line-height: 1.7;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Info & Seller -->
+      <div class="col-lg-4 d-none" id="col-right">
+        <!-- Product Header Info -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge bg-secondary condition-badge" id="detail-condition">Tình trạng</span>
+            <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="btn-favorite-detail" onclick="handleDetailFavorite()">
+              <i class="bi bi-heart me-1"></i> Lưu tin
+            </button>
+          </div>
+
+          <h4 class="fw-bold mb-2 text-dark" id="detail-title"></h4>
+          <div class="fs-3 fw-bold text-danger mb-3" id="detail-price"></div>
+
+          <ul class="list-unstyled text-muted small mb-4">
+            <li class="mb-2"><i class="bi bi-geo-alt me-2 text-warning"></i>Khu vực: <strong class="text-dark" id="detail-location"></strong></li>
+            <li class="mb-2"><i class="bi bi-clock me-2 text-warning"></i>Đăng lúc: <span id="detail-time"></span></li>
+            <li class="mb-2"><i class="bi bi-eye me-2 text-warning"></i>Lượt xem: <span id="detail-views"></span></li>
+          </ul>
+
+          <div class="d-grid gap-2" id="detail-action-buttons">
+            <!-- Chat & Phone actions -->
+          </div>
+        </div>
+
+        <!-- Seller Profile Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <h6 class="fw-bold mb-3 text-muted text-uppercase small">Thông tin người bán</h6>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <img id="seller-avatar" src="" class="rounded-circle" width="55" height="55" style="object-fit:cover;">
+            <div>
+              <h6 class="fw-bold mb-0" id="seller-name"></h6>
+              <span class="text-muted small" id="seller-username"></span>
+            </div>
+          </div>
+          <div class="d-grid">
+            <button class="btn btn-outline-warning text-dark fw-semibold" id="btn-call-seller" onclick="revealPhone()">
+              <i class="bi bi-telephone me-1"></i> <span id="seller-phone-text">Bấm để hiện số điện thoại</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Report violation link -->
+        <div class="text-center">
+          <button class="btn btn-link text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportModal">
+            <i class="bi bi-flag me-1"></i> Báo cáo tin đăng có dấu hiệu vi phạm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="mt-5 d-none" id="related-section">
+      <h5 class="fw-bold mb-3"><i class="bi bi-tags-fill text-warning me-2"></i>Sản phẩm tương tự cùng danh mục</h5>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3" id="related-list"></div>
+    </div>
+  </main>
+
+  <!-- Modal Báo Cáo Vi Phạm -->
+  <div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Báo cáo tin đăng vi phạm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Hãy cho chúng tôi biết lý do bạn báo cáo tin này để bảo vệ quyền lợi cộng đồng:</p>
+          <form id="report-form" onsubmit="submitReport(event)">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Lý do vi phạm (*)</label>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="reportReason" id="reason1" value="fraud" checked>
+                <label class="form-check-label" for="reason1">Lừa đảo, nhận cọc không giao hàng</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="reportReason" id="reason2" value="fake">
+                <label class="form-check-label" for="reason2">Hàng giả, hàng nhái, sai sự thật</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="reportReason" id="reason3" value="offensive">
+                <label class="form-check-label" for="reason3">Nội dung phản cảm, thô tục</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="reportReason" id="reason4" value="wrong_category">
+                <label class="form-check-label" for="reason4">Đăng sai danh mục quy định</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="reportReason" id="reason5" value="other">
+                <label class="form-check-label" for="reason5">Lý do khác</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mô tả thêm (Tùy chọn)</label>
+              <textarea class="form-control" id="report-description" rows="3" placeholder="Cung cấp thêm chi tiết chứng cứ nếu có..."></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+              <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold" id="btn-submit-report">Gửi báo cáo</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-white border-top py-4 mt-auto">
+    <div class="container text-center text-muted small">
+      <p class="mb-0">Patuhi Marketplace &copy; 2026</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/product-detail.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Cá Nhân & Quản Lý Tin Đăng — Patuhi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <i class="bi bi-shop-window text-warning fs-3"></i>
+        <span>PATUHI</span>
+      </a>
+      <div id="nav-auth-container" class="ms-auto"></div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="row g-4">
+      <!-- Left: Profile Overview & Tabs -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white mb-4">
+          <div class="position-relative d-inline-block mx-auto mb-3">
+            <img id="profile-avatar" src="/uploads/avatars/default.png" class="rounded-circle shadow-sm" width="110" height="110" style="object-fit:cover;">
+            <label for="avatar-input" class="btn btn-sm btn-warning rounded-circle position-absolute bottom-0 end-0 shadow-sm" title="Đổi ảnh đại diện" style="width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <i class="bi bi-camera"></i>
+            </label>
+            <input type="file" id="avatar-input" class="d-none" accept="image/*" onchange="uploadUserAvatar(this)">
+          </div>
+          <h5 class="fw-bold mb-1" id="profile-name">Đang tải...</h5>
+          <span class="text-muted small mb-2" id="profile-username">@username</span>
+          <div>
+            <span class="badge bg-primary text-uppercase px-3 py-1" id="profile-role">MEMBER</span>
+            <span class="badge bg-success px-3 py-1" id="profile-status">Hoạt động</span>
+          </div>
+        </div>
+
+        <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden">
+          <button class="list-group-item list-group-item-action active py-3 fw-semibold border-0" id="tab-btn-listings" onclick="switchTab('listings')">
+            <i class="bi bi-grid me-2"></i> Quản lý tin đăng của tôi
+          </button>
+          <button class="list-group-item list-group-item-action py-3 fw-semibold border-0" id="tab-btn-info" onclick="switchTab('info')">
+            <i class="bi bi-person-gear me-2"></i> Cập nhật thông tin cá nhân
+          </button>
+          <button class="list-group-item list-group-item-action py-3 fw-semibold border-0" id="tab-btn-password" onclick="switchTab('password')">
+            <i class="bi bi-shield-lock me-2"></i> Đổi mật khẩu
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Tab Content -->
+      <div class="col-lg-8">
+        <!-- Tab 1: My Listings -->
+        <div id="tab-content-listings" class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+          <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-collection text-warning me-2"></i>Tin đăng của tôi</h5>
+            <div class="d-flex gap-2">
+              <select id="my-listings-status-filter" class="form-select form-select-sm" onchange="loadMyListings()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ duyệt</option>
+                <option value="approved">Đang hiển thị</option>
+                <option value="sold">Đã bán</option>
+                <option value="rejected">Bị từ chối</option>
+                <option value="hidden">Đã ẩn</option>
+              </select>
+              <a href="/post" class="btn btn-warning btn-sm text-dark fw-bold text-nowrap rounded-pill px-3">
+                <i class="bi bi-plus-lg me-1"></i> Đăng tin mới
+              </a>
+            </div>
+          </div>
+
+          <div id="my-listings-container">
+            <div class="text-center py-4 text-muted">Đang tải tin đăng...</div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Update Profile -->
+        <div id="tab-content-info" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
+          <h5 class="fw-bold mb-4 pb-2 border-bottom"><i class="bi bi-person-gear text-warning me-2"></i>Thông tin cá nhân</h5>
+          <form id="update-profile-form" onsubmit="handleUpdateProfile(event)">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Họ và tên</label>
+              <input type="text" class="form-control" id="info-fullname" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tên đăng nhập (Không thể đổi)</label>
+              <input type="text" class="form-control bg-light" id="info-username" readonly disabled>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Email (Không thể đổi)</label>
+              <input type="email" class="form-control bg-light" id="info-email" readonly disabled>
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Số điện thoại liên hệ</label>
+              <input type="tel" class="form-control" id="info-phone" placeholder="09xxxxxxxx">
+            </div>
+            <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4">
+              Lưu thay đổi
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab 3: Change Password -->
+        <div id="tab-content-password" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
+          <h5 class="fw-bold mb-4 pb-2 border-bottom"><i class="bi bi-shield-lock text-warning me-2"></i>Đổi mật khẩu tài khoản</h5>
+          <form id="change-password-form" onsubmit="handleChangePassword(event)">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mật khẩu hiện tại</label>
+              <input type="password" class="form-control" id="old-password" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mật khẩu mới (Tối thiểu 6 ký tự)</label>
+              <input type="password" class="form-control" id="new-password" required minlength="6">
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Xác nhận mật khẩu mới</label>
+              <input type="password" class="form-control" id="confirm-password" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4">
+              Cập nhật mật khẩu
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white border-top py-4 mt-auto">
+    <div class="container text-center text-muted small">
+      <p class="mb-0">Patuhi Marketplace &copy; 2026</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>
