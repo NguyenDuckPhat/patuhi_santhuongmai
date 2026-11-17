@@ -18,6 +18,15 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      brand: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+      },
+      model: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        field: 'product_model'
+      },
       title: {
         type: DataTypes.STRING(255),
         allowNull: false

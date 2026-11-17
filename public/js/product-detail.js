@@ -44,6 +44,11 @@ async function loadProductDetail(id) {
     document.getElementById('detail-time').innerText = PatuhiApp.formatTimeAgo(product.created_at);
     document.getElementById('detail-views').innerText = product.views;
     document.getElementById('detail-description').innerText = product.description;
+    for (const field of ['brand', 'model']) {
+      const value = product[field];
+      document.getElementById(`detail-${field}-row`).hidden = !value;
+      document.getElementById(`detail-${field}`).innerText = value || '';
+    }
 
     // Condition
     const condElem = document.getElementById('detail-condition');

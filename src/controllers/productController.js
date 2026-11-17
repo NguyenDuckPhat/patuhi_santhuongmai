@@ -6,6 +6,26 @@ const initModels = require('../models');
 
 const getModels = () => initModels(getSequelize());
 
+const getOrCreateCustomCategory = async (Category, name) => {
+  const trimmedName = typeof name === 'string' ? name.trim() : '';
+  if (!trimmedName || trimmedName.length > 100) return null;
+
+  const slug = trimmedName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (!slug) return null;
+
+  const [category] = await Category.findOrCreate({
+    where: { slug },
+    defaults: { name: trimmedName, slug, icon: 'bi-grid' }
+  });
+  return category;
+};
+
 // 1. Xem danh sách sản phẩm (Hỗ trợ tìm kiếm, lọc theo danh mục, lọc theo giá, phân trang, sắp xếp)
 const getProducts = async (req, res) => {
   try {
@@ -220,11 +240,13 @@ const getProductById = async (req, res) => {
 // 3. Đăng tin bán sản phẩm mới
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category_id, condition, location, phone_contact } = req.body;
+    const { title, description, price, category_id, category_name, brand, model, condition, location, phone_contact } = req.body;
     const { Product, ProductImage, Category } = getModels();
 
-    // Kiểm tra danh mục có tồn tại
-    const category = await Category.findByPk(category_id);
+    // Tạo hoặc lấy danh mục nhập tay, hoặc kiểm tra danh mục đã chọn.
+    const category = category_name
+      ? await getOrCreateCustomCategory(Category, category_name)
+      : await Category.findByPk(category_id);
     if (!category) {
       return res.status(400).json({
         success: false,
@@ -237,7 +259,9 @@ const createProduct = async (req, res) => {
 
     const newProduct = await Product.create({
       user_id: req.user.id,
-      category_id: parseInt(category_id),
+      category_id: category.id,
+      brand: brand ? brand.trim().slice(0, 100) : null,
+      model: model ? model.trim().slice(0, 100) : null,
       title: title.trim(),
       description: description.trim(),
       price: parseFloat(price),
@@ -285,7 +309,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, price, category_id, condition, location, phone_contact, remove_image_ids } = req.body;
+    const { title, description, price, category_id, category_name, brand, model, condition, location, phone_contact, remove_image_ids } = req.body;
     const { Product, ProductImage, Category } = getModels();
 
     const product = await Product.findByPk(id, {
@@ -307,7 +331,13 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    if (category_id) {
+    if (category_name) {
+      const cat = await getOrCreateCustomCategory(Category, category_name);
+      if (!cat) {
+        return res.status(400).json({ success: false, message: 'Tên danh mục phải từ 1 đến 100 ký tự.' });
+      }
+      product.category_id = cat.id;
+    } else if (category_id) {
       const cat = await Category.findByPk(category_id);
       if (!cat) {
         return res.status(400).json({ success: false, message: 'Danh mục không tồn tại.' });
@@ -316,6 +346,8 @@ const updateProduct = async (req, res) => {
     }
 
     if (title) product.title = title.trim();
+    if (brand !== undefined) product.brand = brand.trim().slice(0, 100) || null;
+    if (model !== undefined) product.model = model.trim().slice(0, 100) || null;
     if (description) product.description = description.trim();
     if (price !== undefined) product.price = parseFloat(price);
     if (condition) product.condition = condition;

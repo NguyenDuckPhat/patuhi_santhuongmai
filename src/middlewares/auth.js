@@ -30,7 +30,7 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'patuhi_secret_key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'patuhi_super_secret_jwt_key_2026_xyz!');
     const userModel = getUserModel();
     const user = await userModel.findByPk(decoded.id);
 
@@ -82,7 +82,7 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'patuhi_secret_key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'patuhi_super_secret_jwt_key_2026_xyz!');
     const userModel = getUserModel();
     const user = await userModel.findByPk(decoded.id);
 

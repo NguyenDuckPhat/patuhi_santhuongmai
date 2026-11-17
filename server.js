@@ -7,6 +7,7 @@ const initSocketIO = require('./src/config/socket');
 const { testAndConnectDB } = require('./src/config/database');
 const initModels = require('./src/models');
 const seedData = require('./src/utils/seedData');
+const ensureProductMetadataColumns = require('./src/utils/ensureProductMetadataColumns');
 
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 3000;
 
@@ -20,6 +21,7 @@ const startServer = async () => {
     // 2. Khởi tạo Models và đồng bộ bảng
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
+    await ensureProductMetadataColumns(sequelize);
     console.log('✅ Đã đồng bộ cấu trúc bảng thành công!');
 
     // 3. Tự động kiểm tra và tạo dữ liệu mẫu nếu chưa có dữ liệu

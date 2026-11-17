@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS `products` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
   `category_id` INT NOT NULL,
+  `brand` VARCHAR(100) NULL,
+  `product_model` VARCHAR(100) NULL,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT NOT NULL,
   `price` DECIMAL(15, 2) NOT NULL DEFAULT 0,

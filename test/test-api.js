@@ -9,6 +9,7 @@ const app = require('../src/app');
 const { testAndConnectDB } = require('../src/config/database');
 const initModels = require('../src/models');
 const seedData = require('../src/utils/seedData');
+const ensureProductMetadataColumns = require('../src/utils/ensureProductMetadataColumns');
 
 let server;
 let baseUrl;
@@ -57,6 +58,7 @@ const runTests = async () => {
     const sequelize = await testAndConnectDB();
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
+    await ensureProductMetadataColumns(sequelize);
     await seedData();
 
     server = http.createServer(app);
@@ -163,13 +165,15 @@ const runTests = async () => {
     const newProductRes = await request('POST', '/api/products', {
       title: 'Bàn phím cơ không dây Bluetooth RGB cao cấp',
       category_id: firstCat.id,
+      brand: 'Keychron',
+      model: 'K8 Pro',
       price: 950000,
       condition: 'like_new',
       location: 'Quận 3, TP.HCM',
       phone_contact: '0911223344',
       description: 'Bàn phím gõ rất êm, switch red, pin dùng được 2 tuần liên tục, đầy đủ hộp.'
     }, memberToken);
-    assert(newProductRes.status === 201 && newProductRes.data.data.product.id, '14. Đăng tin bán sản phẩm mới');
+    assert(newProductRes.status === 201 && newProductRes.data.data.product.id && newProductRes.data.data.product.brand === 'Keychron' && newProductRes.data.data.product.model === 'K8 Pro', '14. Đăng tin với hãng và model');
     const createdProductId = newProductRes.data.data.product.id;
 
     const detailRes = await request('GET', `/api/products/${createdProductId}`, null, memberToken);
@@ -177,9 +181,11 @@ const runTests = async () => {
 
     const updateProdRes = await request('PUT', `/api/products/${createdProductId}`, {
       price: 850000,
+      brand: 'Keychron',
+      model: 'K8 Max',
       description: 'Giảm giá còn 850k cho bạn nào qua lấy sớm trong hôm nay!'
     }, memberToken);
-    assert(updateProdRes.status === 200 && parseFloat(updateProdRes.data.data.product.price) === 850000, '16. Sửa thông tin tin đăng của chính mình');
+    assert(updateProdRes.status === 200 && parseFloat(updateProdRes.data.data.product.price) === 850000 && updateProdRes.data.data.product.model === 'K8 Max', '16. Sửa thông tin hãng/model tin đăng');
 
     const statusProdRes = await request('PATCH', `/api/products/${createdProductId}/status`, {
       status: 'sold'
@@ -277,7 +283,7 @@ const runTests = async () => {
 
     // Quản lý danh mục
     const createCatRes = await request('POST', '/api/admin/categories', {
-      name: 'Thú Cưng & Phụ Kiện',
+      name: `Thú Cưng & Phụ Kiện ${Date.now()}`,
       icon: 'bi-heart'
     }, adminToken);
     assert(createCatRes.status === 201 && createCatRes.data.data.category.id, '32. Quản lý danh mục: Thêm danh mục mới');

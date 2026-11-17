@@ -53,9 +53,26 @@ const productRules = [
     .isLength({ min: 5, max: 200 })
     .withMessage('Tiêu đề tin đăng từ 5 đến 200 ký tự.'),
   body('category_id')
-    .notEmpty()
-    .isInt()
-    .withMessage('Danh mục không hợp lệ.'),
+    .custom((value, { req }) => {
+      if (req.body.category_name) return true;
+      return Number.isInteger(Number(value)) && Number(value) > 0;
+    })
+    .withMessage('Vui lòng chọn danh mục hoặc nhập tên danh mục khác.'),
+  body('category_name')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Tên danh mục khác phải từ 1 đến 100 ký tự.'),
+  body('brand')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Tên hãng tối đa 100 ký tự.'),
+  body('model')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Tên model tối đa 100 ký tự.'),
   body('price')
     .isFloat({ min: 0 })
     .withMessage('Giá sản phẩm phải là số không âm.'),
