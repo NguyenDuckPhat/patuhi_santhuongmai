@@ -98,6 +98,9 @@ async function loadProducts(page = 1) {
       } else if (p.condition === 'like_new') {
         conditionLabel = 'Như mới 99%';
         conditionClass = 'bg-info text-dark';
+      } else if (p.condition === 'other') {
+        conditionLabel = p.condition_detail || 'Tình trạng khác';
+        conditionClass = 'bg-secondary text-white';
       }
 
       return `
@@ -125,7 +128,7 @@ async function loadProducts(page = 1) {
                 <span class="text-truncate" style="max-width: 140px;">
                   <i class="bi bi-geo-alt me-1"></i>${p.location}
                 </span>
-                <span>${PatuhiApp.formatTimeAgo(p.created_at)}</span>
+                <span>${PatuhiApp.formatTimeAgo(p.created_at || p.createdAt)}</span>
               </div>
             </div>
           </div>

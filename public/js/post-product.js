@@ -2,6 +2,8 @@ let editProductId = null;
 let selectedFiles = [];
 let removedImageIds = [];
 let currentPostStep = 1;
+const phoneBrandOptions = ['Apple', 'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Huawei', 'Sony'];
+const phoneModelOptions = ['iPhone', 'Galaxy', 'Redmi', 'OPPO A Series', 'Vivo V Series'];
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Kiểm tra đăng nhập
@@ -16,9 +18,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Tải danh mục
   await loadCategories();
-  document.getElementById('post-category').addEventListener('change', updateOtherCategoryField);
+  document.getElementById('post-category').addEventListener('change', () => {
+    updateOtherCategoryField();
+    updateBrandModelOptions();
+  });
   document.getElementById('post-brand').addEventListener('change', () => toggleOtherProductField('brand'));
   document.getElementById('post-model').addEventListener('change', () => toggleOtherProductField('model'));
+  document.getElementById('post-condition').addEventListener('change', toggleOtherConditionField);
+  updateBrandModelOptions();
 
   // Kiểm tra xem có đang ở chế độ sửa tin không
   const urlParams = new URLSearchParams(window.location.search);
@@ -47,6 +54,35 @@ function updateOtherCategoryField() {
   }
 }
 
+function updateBrandModelOptions() {
+  const category = document.getElementById('post-category');
+  const isPhone = category.selectedOptions[0]?.textContent.toLowerCase().includes('điện thoại');
+
+  for (const [field, options] of [['brand', phoneBrandOptions], ['model', phoneModelOptions]]) {
+    const select = document.getElementById(`post-${field}`);
+    const previousValue = getProductFieldValue(field);
+    const values = isPhone ? options : [];
+    select.innerHTML = '<option value="">-- Chọn --</option>' +
+      values.map((value) => `<option value="${value}">${value}</option>`).join('') +
+      `<option value="Khác">${field === 'model' ? 'Tự nhập' : 'Khác'}</option>`;
+
+    if (values.includes(previousValue)) {
+      select.value = previousValue;
+      toggleOtherProductField(field);
+    } else if (previousValue) {
+      select.value = 'Khác';
+      toggleOtherProductField(field);
+      document.getElementById(`post-${field}-other`).value = previousValue;
+    } else if (!isPhone) {
+      select.value = 'Khác';
+      toggleOtherProductField(field);
+    } else {
+      select.value = '';
+      toggleOtherProductField(field);
+    }
+  }
+}
+
 function toggleOtherProductField(field) {
   const select = document.getElementById(`post-${field}`);
   const input = document.getElementById(`post-${field}-other`);
@@ -54,6 +90,18 @@ function toggleOtherProductField(field) {
   input.hidden = !isOther;
   input.required = isOther;
   if (!isOther) input.value = '';
+}
+
+function toggleOtherConditionField() {
+  const select = document.getElementById('post-condition');
+  const input = document.getElementById('post-condition-other');
+  const isOther = select.value === 'other';
+  input.hidden = !isOther;
+  input.required = isOther;
+  if (!isOther) {
+    input.value = '';
+    input.classList.remove('is-invalid');
+  }
 }
 
 function updatePostStepIndicators() {
@@ -94,6 +142,14 @@ function validatePostStep(step) {
     }
   }
   if (step === 2) {
+    const conditionInput = document.getElementById('post-condition-other');
+    if (document.getElementById('post-condition').value === 'other' && !conditionInput.value.trim()) {
+      conditionInput.classList.add('is-invalid');
+      conditionInput.reportValidity();
+      valid = false;
+    } else {
+      conditionInput.classList.remove('is-invalid');
+    }
     for (const field of ['brand', 'model']) {
       const select = document.getElementById(`post-${field}`);
       const input = document.getElementById(`post-${field}-other`);
@@ -125,7 +181,9 @@ function updatePostPreview() {
   document.getElementById('post-preview-details').textContent = [
     getProductFieldValue('brand') && `Hãng: ${getProductFieldValue('brand')}`,
     getProductFieldValue('model') && `Model: ${getProductFieldValue('model')}`,
-    document.getElementById('post-condition').selectedOptions[0]?.textContent,
+    document.getElementById('post-condition').value === 'other'
+      ? `Tình trạng: ${document.getElementById('post-condition-other').value.trim()}`
+      : document.getElementById('post-condition').selectedOptions[0]?.textContent,
     document.getElementById('post-location').value.trim(),
     document.getElementById('post-phone').value.trim()
   ].filter(Boolean).join(' · ');
@@ -206,7 +264,10 @@ async function loadProductForEdit(id) {
     if (p.model) setProductFieldValue('model', p.model);
     document.getElementById('post-category').value = p.category_id;
     updateOtherCategoryField();
+    updateBrandModelOptions();
     document.getElementById('post-condition').value = p.condition;
+    document.getElementById('post-condition-other').value = p.condition_detail || '';
+    toggleOtherConditionField();
     document.getElementById('post-price').value = p.price;
     document.getElementById('post-phone').value = p.phone_contact || '';
     document.getElementById('post-location').value = p.location;
@@ -294,6 +355,7 @@ async function handleProductSubmit(event) {
   const title = document.getElementById('post-title').value.trim();
   const category_id = document.getElementById('post-category').value;
   const condition = document.getElementById('post-condition').value;
+  const condition_detail = document.getElementById('post-condition-other').value.trim();
   const price = document.getElementById('post-price').value;
   const phone_contact = document.getElementById('post-phone').value.trim();
   const location = document.getElementById('post-location').value.trim();
@@ -309,6 +371,7 @@ async function handleProductSubmit(event) {
     formData.append('category_id', category_id);
   }
   formData.append('condition', condition);
+  formData.append('condition_detail', condition_detail);
   formData.append('price', price);
   formData.append('phone_contact', phone_contact);
   formData.append('location', location);

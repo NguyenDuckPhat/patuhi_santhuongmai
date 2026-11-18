@@ -123,6 +123,39 @@ const getOrCreateConversation = async (req, res) => {
   }
 };
 
+const getReadStatus = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { Conversation, Message } = getModels();
+    const userId = req.user.id;
+    const conversation = await Conversation.findByPk(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy cuộc trò chuyện này.' });
+    }
+    if (conversation.buyer_id !== userId && conversation.seller_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xem trạng thái tin nhắn này.' });
+    }
+
+    const readMessages = await Message.findAll({
+      where: { conversation_id: conversationId, sender_id: userId, is_read: true },
+      attributes: ['id']
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { readMessageIds: readMessages.map(message => message.id) }
+    });
+  } catch (error) {
+    console.error('Lỗi lấy trạng thái đã xem:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể tải trạng thái đã xem.',
+      error: error.message
+    });
+  }
+};
+
 // 3. Xem lịch sử tin nhắn trong một cuộc hội thoại
 const getMessages = async (req, res) => {
   try {
@@ -158,7 +191,29 @@ const getMessages = async (req, res) => {
       });
     }
 
-    // Lấy tin nhắn
+    // Đánh dấu các tin nhắn đối phương gửi đến là đã đọc
+    const [updatedReadCount] = await Message.update(
+      { is_read: true },
+      {
+        where: {
+          conversation_id: conversationId,
+          sender_id: { [Op.ne]: userId },
+          is_read: false
+        }
+      }
+    );
+
+    if (updatedReadCount > 0) {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`conversation_${conversationId}`).emit('messages_read', {
+          conversationId: Number(conversationId),
+          readerId: userId
+        });
+      }
+    }
+
+    // Load after marking read so the viewer receives the current receipt state.
     const messages = await Message.findAll({
       where: { conversation_id: conversationId },
       include: [
@@ -170,18 +225,6 @@ const getMessages = async (req, res) => {
       ],
       order: [['created_at', 'ASC']]
     });
-
-    // Đánh dấu các tin nhắn đối phương gửi đến là đã đọc
-    await Message.update(
-      { is_read: true },
-      {
-        where: {
-          conversation_id: conversationId,
-          sender_id: { [Op.ne]: userId },
-          is_read: false
-        }
-      }
-    );
 
     const convData = conversation.toJSON();
     convData.otherParty = convData.buyer_id === userId ? convData.seller : convData.buyer;
@@ -280,6 +323,7 @@ const sendMessage = async (req, res) => {
 module.exports = {
   getConversations,
   getOrCreateConversation,
+  getReadStatus,
   getMessages,
   sendMessage
 };

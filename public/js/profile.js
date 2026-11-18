@@ -106,7 +106,7 @@ async function loadMyListings() {
                   </td>
                   <td class="fw-bold text-danger text-nowrap">${PatuhiApp.formatPrice(p.price)}</td>
                   <td>${statusBadge}</td>
-                  <td class="text-muted small text-nowrap">${PatuhiApp.formatTimeAgo(p.created_at)}</td>
+                  <td class="text-muted small text-nowrap">${PatuhiApp.formatTimeAgo(p.created_at || p.createdAt)}</td>
                   <td class="text-end text-nowrap">
                     <div class="dropdown d-inline-block">
                       <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">

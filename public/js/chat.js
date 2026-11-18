@@ -1,8 +1,26 @@
 let socket = null;
 let activeConversationId = null;
 let myUser = null;
+let readStatusSyncTimer = null;
+let chatAudioContext = null;
+let chatSoundEnabled = localStorage.getItem('chatSoundEnabled') === 'true';
+let chatSoundReady = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  updateChatSoundButton();
+  const enableSoundAfterGesture = () => {
+    unlockChatSound();
+    document.removeEventListener('pointerdown', enableSoundAfterGesture);
+    document.removeEventListener('keydown', enableSoundAfterGesture);
+  };
+  document.addEventListener('pointerdown', enableSoundAfterGesture);
+  document.addEventListener('keydown', enableSoundAfterGesture);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && chatSoundEnabled && chatSoundReady) {
+      getChatAudioContext()?.resume();
+    }
+  });
+
   myUser = await PatuhiApp.checkAuth();
   if (!myUser) {
     window.location.href = '/login?redirect=/chat';
@@ -13,10 +31,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof io !== 'undefined') {
     socket = io();
     socket.on('receive_message', (msg) => {
-      if (msg.conversation_id === activeConversationId) {
+      if (Number(msg.sender_id) !== Number(myUser.id)) playIncomingMessageSound();
+      if (Number(msg.conversation_id) === Number(activeConversationId)) {
         appendMessage(msg);
+        if (Number(msg.sender_id) !== Number(myUser.id)) {
+          markConversationAsRead(activeConversationId);
+        }
       }
       updateConversationLastMessage(msg.conversation_id, msg.content);
+    });
+    socket.on('messages_read', ({ conversationId, readerId }) => {
+      if (Number(conversationId) === Number(activeConversationId) && Number(readerId) !== Number(myUser.id)) {
+        markMyMessagesAsRead();
+      }
     });
   }
 
@@ -29,6 +56,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectConversation(parseInt(convId));
   }
 });
+
+function getChatAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!chatAudioContext) chatAudioContext = new AudioContextClass();
+  return chatAudioContext;
+}
+
+function updateChatSoundButton() {
+  const button = document.getElementById('toggle-chat-sound');
+  if (!button) return;
+  const label = chatSoundEnabled ? 'Tắt âm báo tin nhắn' : 'Bật âm báo tin nhắn';
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = `<i class="bi ${chatSoundEnabled ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'}" aria-hidden="true"></i>`;
+}
+
+async function unlockChatSound() {
+  const audioContext = getChatAudioContext();
+  if (!audioContext) return false;
+  try {
+    if (audioContext.state !== 'running') await audioContext.resume();
+    chatSoundReady = audioContext.state === 'running';
+    return chatSoundReady;
+  } catch (error) {
+    chatSoundReady = false;
+    return false;
+  }
+}
+
+async function toggleChatSound() {
+  chatSoundEnabled = !chatSoundEnabled;
+  localStorage.setItem('chatSoundEnabled', String(chatSoundEnabled));
+  updateChatSoundButton();
+  if (!chatSoundEnabled) return;
+
+  const unlocked = await unlockChatSound();
+  if (unlocked) {
+    await playIncomingMessageSound();
+    PatuhiApp.showToast('Đã bật âm báo. Đây là tiếng thử.', 'success');
+  } else {
+    chatSoundEnabled = false;
+    localStorage.setItem('chatSoundEnabled', 'false');
+    updateChatSoundButton();
+    PatuhiApp.showToast('Trình duyệt chưa cho phép phát âm thanh. Hãy bấm nút loa để thử lại.', 'warning');
+  }
+}
+
+async function playIncomingMessageSound() {
+  if (!chatSoundEnabled || !chatSoundReady) return;
+  const audioContext = getChatAudioContext();
+  if (!audioContext) return;
+  if (audioContext.state !== 'running' && !(await unlockChatSound())) return;
+
+  const now = audioContext.currentTime;
+  const notes = [
+    { frequency: 784, start: 0, duration: 0.22, volume: 0.16 },
+    { frequency: 1046.5, start: 0.13, duration: 0.34, volume: 0.12 }
+  ];
+
+  notes.forEach(({ frequency, start, duration, volume }) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const noteStart = now + start;
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, noteStart);
+    gain.gain.setValueAtTime(0.0001, noteStart);
+    gain.gain.exponentialRampToValueAtTime(volume, noteStart + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + duration);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(noteStart);
+    oscillator.stop(noteStart + duration + 0.02);
+  });
+}
 
 async function loadConversations() {
   const container = document.getElementById('conversations-list');
@@ -84,6 +186,10 @@ async function loadConversations() {
 }
 
 async function selectConversation(conversationId) {
+  if (readStatusSyncTimer) {
+    clearInterval(readStatusSyncTimer);
+    readStatusSyncTimer = null;
+  }
   if (activeConversationId && socket) {
     socket.emit('leave_conversation', activeConversationId);
   }
@@ -148,6 +254,8 @@ async function selectConversation(conversationId) {
       messages.forEach(m => appendMessage(m));
       scrollToBottom();
     }
+    refreshReadStatus(conversationId);
+    readStatusSyncTimer = setInterval(() => refreshReadStatus(conversationId), 2000);
   } catch (err) {
     messagesContainer.innerHTML = '<div class="p-3 text-danger">Lỗi kết nối tải tin nhắn.</div>';
   }
@@ -156,17 +264,69 @@ async function selectConversation(conversationId) {
 function appendMessage(message) {
   const container = document.getElementById('messages-container');
   const isMine = message.sender_id === myUser.id;
+  const messageId = Number(message.id);
+  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
+
+  const createdAt = message.created_at || message.createdAt || message.timestamp;
+  const parsedDate = createdAt ? new Date(createdAt) : null;
+  const timeLabel = parsedDate && !Number.isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    : 'Vừa xong';
+  const isRead = message.is_read === true || message.is_read === 1;
 
   const div = document.createElement('div');
   div.className = `msg-bubble ${isMine ? 'sent' : 'received'}`;
+  if (Number.isFinite(messageId)) div.id = `message-${messageId}`;
   div.innerHTML = `
     <div>${escapeHtml(message.content)}</div>
     <div class="text-end" style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
-      ${new Date(message.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+      ${timeLabel}
+      ${isMine ? `<span class="message-read-status ms-1" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
     </div>
   `;
   container.appendChild(div);
   scrollToBottom();
+}
+
+function markMyMessagesAsRead() {
+  document.querySelectorAll('.msg-bubble.sent .message-read-status').forEach((status) => {
+    status.dataset.messageRead = 'true';
+    status.textContent = 'Đã xem';
+  });
+}
+
+async function refreshReadStatus(conversationId) {
+  try {
+    const res = await fetch(`/api/chat/conversations/${conversationId}/read-status`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    if (!res.ok || Number(conversationId) !== Number(activeConversationId)) return;
+
+    const json = await res.json();
+    const readIds = new Set(json.data.readMessageIds.map(Number));
+    document.querySelectorAll('.msg-bubble.sent .message-read-status').forEach((status) => {
+      if (readIds.has(Number(status.dataset.messageId))) {
+        status.dataset.messageRead = 'true';
+        status.textContent = 'Đã xem';
+      }
+    });
+  } catch (error) {
+    console.error('Không thể đồng bộ trạng thái đã xem:', error);
+  }
+}
+
+async function markConversationAsRead(conversationId) {
+  try {
+    await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+  } catch (error) {
+    console.error('Không thể cập nhật trạng thái đã xem:', error);
+  }
 }
 
 async function handleSendMessage(e) {

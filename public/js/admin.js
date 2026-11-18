@@ -122,7 +122,7 @@ async function loadAdminProducts() {
                       ${p.status.toUpperCase()}
                     </span>
                   </td>
-                  <td class="text-muted small">${PatuhiApp.formatTimeAgo(p.created_at)}</td>
+                  <td class="text-muted small">${PatuhiApp.formatTimeAgo(p.created_at || p.createdAt)}</td>
                   <td class="text-end text-nowrap">
                     ${p.status !== 'approved' ? `
                       <button class="btn btn-sm btn-success rounded-pill px-3 me-1" onclick="reviewListing(${p.id}, 'approve')">

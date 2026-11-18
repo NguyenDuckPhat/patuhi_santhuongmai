@@ -132,7 +132,14 @@ const PatuhiApp = {
 
   // Định dạng thời gian
   formatTimeAgo(dateString) {
-    const date = new Date(dateString);
+    if (dateString === null || dateString === undefined || dateString === '') return 'Không rõ thời gian';
+
+    const normalizedDate = typeof dateString === 'string'
+      ? dateString.trim().replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/, '$1T$2')
+      : dateString;
+    const date = new Date(normalizedDate);
+    if (Number.isNaN(date.getTime())) return 'Không rõ thời gian';
+
     const now = new Date();
     const diffSec = Math.floor((now - date) / 1000);
 

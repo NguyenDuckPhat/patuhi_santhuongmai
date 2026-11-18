@@ -112,6 +112,18 @@
           <div class="d-grid gap-2" id="detail-action-buttons">
             <!-- Chat & Phone actions -->
           </div>
+          <div class="border rounded-3 bg-light p-3 mt-3" id="price-negotiation" hidden>
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+              <div>
+                <p class="small fw-bold mb-0">Giá còn thương lượng</p>
+                <p class="small text-muted mb-0 mt-1">Gửi mức giá bạn muốn mua, người bán sẽ nhận được tin nhắn.</p>
+              </div>
+              <i class="bi bi-cash-coin text-warning fs-5" aria-hidden="true"></i>
+            </div>
+            <button type="button" class="btn btn-outline-secondary w-100" onclick="openPriceOfferModal()">
+              <i class="bi bi-handshake me-1" aria-hidden="true"></i>Thương lượng giá
+            </button>
+          </div>
         </div>
 
         <!-- Seller Profile Card -->
@@ -146,6 +158,28 @@
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3" id="related-list"></div>
     </div>
   </main>
+
+  <div class="modal fade" id="priceOfferModal" tabindex="-1" aria-labelledby="priceOfferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <form onsubmit="submitPriceOffer(event)">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="priceOfferModalLabel">Thương lượng giá</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">Giá niêm yết: <strong id="offer-listed-price" class="text-danger"></strong></p>
+            <label for="price-offer-amount" class="form-label fw-semibold">Mức giá bạn muốn mua (VNĐ)</label>
+            <input type="number" class="form-control" id="price-offer-amount" min="1000" step="1000" required placeholder="Nhập giá đề nghị">
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-warning fw-semibold" id="btn-send-price-offer"><i class="bi bi-send me-1"></i>Gửi đề nghị</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal Báo Cáo Vi Phạm -->
   <div class="modal fade" id="reportModal" tabindex="-1">

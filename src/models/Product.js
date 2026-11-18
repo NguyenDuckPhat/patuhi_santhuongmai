@@ -41,8 +41,12 @@ module.exports = (sequelize) => {
         defaultValue: 0
       },
       condition: {
-        type: DataTypes.ENUM('new', 'like_new', 'used'),
+        type: DataTypes.ENUM('new', 'like_new', 'used', 'other'),
         defaultValue: 'used'
+      },
+      condition_detail: {
+        type: DataTypes.STRING(100),
+        allowNull: true
       },
       location: {
         type: DataTypes.STRING(150),

@@ -59,6 +59,16 @@ const runTests = async () => {
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
     await ensureProductMetadataColumns(sequelize);
+
+    // Remove orphan categories left behind by older runs of this API test.
+    const categoriesBeforeSeed = await models.Category.findAll({ attributes: ['id', 'name'] });
+    for (const category of categoriesBeforeSeed) {
+      if (/^Thú Cưng & Phụ Kiện \d{13}$/.test(category.name) &&
+          await models.Product.count({ where: { category_id: category.id } }) === 0) {
+        await category.destroy();
+      }
+    }
+
     await seedData();
 
     server = http.createServer(app);
@@ -173,7 +183,12 @@ const runTests = async () => {
       phone_contact: '0911223344',
       description: 'Bàn phím gõ rất êm, switch red, pin dùng được 2 tuần liên tục, đầy đủ hộp.'
     }, memberToken);
-    assert(newProductRes.status === 201 && newProductRes.data.data.product.id && newProductRes.data.data.product.brand === 'Keychron' && newProductRes.data.data.product.model === 'K8 Pro', '14. Đăng tin với hãng và model');
+    assert(
+      newProductRes.status === 201 && newProductRes.data.data.product.id &&
+      newProductRes.data.data.product.brand === 'Keychron' && newProductRes.data.data.product.model === 'K8 Pro' &&
+      !Number.isNaN(new Date(newProductRes.data.data.product.created_at || newProductRes.data.data.product.createdAt).getTime()),
+      '14. Đăng tin với hãng/model và ngày tạo hợp lệ'
+    );
     const createdProductId = newProductRes.data.data.product.id;
 
     const detailRes = await request('GET', `/api/products/${createdProductId}`, null, memberToken);
@@ -183,9 +198,11 @@ const runTests = async () => {
       price: 850000,
       brand: 'Keychron',
       model: 'K8 Max',
+      condition: 'other',
+      condition_detail: 'Trầy nhẹ ở cạnh bên',
       description: 'Giảm giá còn 850k cho bạn nào qua lấy sớm trong hôm nay!'
     }, memberToken);
-    assert(updateProdRes.status === 200 && parseFloat(updateProdRes.data.data.product.price) === 850000 && updateProdRes.data.data.product.model === 'K8 Max', '16. Sửa thông tin hãng/model tin đăng');
+    assert(updateProdRes.status === 200 && parseFloat(updateProdRes.data.data.product.price) === 850000 && updateProdRes.data.data.product.model === 'K8 Max' && updateProdRes.data.data.product.condition === 'other' && updateProdRes.data.data.product.condition_detail === 'Trầy nhẹ ở cạnh bên', '16. Sửa thông tin hãng/model và tình trạng khác tin đăng');
 
     const statusProdRes = await request('PATCH', `/api/products/${createdProductId}/status`, {
       status: 'sold'
@@ -218,12 +235,20 @@ const runTests = async () => {
     const convId = createConvRes.data.data.conversationId;
 
     const sendMsgRes = await request('POST', `/api/chat/conversations/${convId}/messages`, {
-      content: 'Chào bạn, sản phẩm này còn không ạ?'
+      content: 'Đề nghị giá 1.500.000 ₫ cho sản phẩm này.'
     }, memberToken);
-    assert(sendMsgRes.status === 201 && sendMsgRes.data.data.message.content.includes('Chào bạn'), '22. Gửi tin nhắn mới');
+    const sentMessage = sendMsgRes.data.data.message;
+    assert(
+      sendMsgRes.status === 201 && sentMessage.content.includes('Đề nghị giá 1.500.000') &&
+      !Number.isNaN(new Date(sentMessage.created_at || sentMessage.createdAt).getTime()) && sentMessage.is_read === false,
+      '22. Gửi tin nhắn với thời gian và trạng thái chưa xem'
+    );
 
-    const getMsgsRes = await request('GET', `/api/chat/conversations/${convId}/messages`, null, memberToken);
-    assert(getMsgsRes.status === 200 && getMsgsRes.data.data.messages.length >= 1, '23. Xem lịch sử tin nhắn trong cuộc trò chuyện');
+    const getMsgsRes = await request('GET', `/api/chat/conversations/${convId}/messages`, null, adminToken);
+    const readMessage = getMsgsRes.data.data.messages.find(message => message.id === sentMessage.id);
+    assert(getMsgsRes.status === 200 && readMessage?.is_read === true, '23. Mở hội thoại cập nhật tin nhắn thành đã xem');
+    const readStatusRes = await request('GET', `/api/chat/conversations/${convId}/read-status`, null, memberToken);
+    assert(readStatusRes.status === 200 && readStatusRes.data.data.readMessageIds.includes(sentMessage.id), '23a. Đồng bộ trạng thái đã xem không tải lại trang');
 
     // ----------------------------------------------------
     // TEST 10: Báo cáo vi phạm (Requirements 24, 25)
@@ -283,10 +308,13 @@ const runTests = async () => {
 
     // Quản lý danh mục
     const createCatRes = await request('POST', '/api/admin/categories', {
-      name: `Thú Cưng & Phụ Kiện ${Date.now()}`,
+      name: 'Danh mục kiểm thử API',
       icon: 'bi-heart'
     }, adminToken);
     assert(createCatRes.status === 201 && createCatRes.data.data.category.id, '32. Quản lý danh mục: Thêm danh mục mới');
+    if (createCatRes.status === 201) {
+      await models.Category.destroy({ where: { id: createCatRes.data.data.category.id } });
+    }
 
     // Xử lý báo cáo vi phạm
     const processReportRes = await request('PATCH', `/api/admin/reports/${reportId}/process`, {

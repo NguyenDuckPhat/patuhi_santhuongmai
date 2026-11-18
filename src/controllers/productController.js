@@ -240,7 +240,7 @@ const getProductById = async (req, res) => {
 // 3. Đăng tin bán sản phẩm mới
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category_id, category_name, brand, model, condition, location, phone_contact } = req.body;
+    const { title, description, price, category_id, category_name, brand, model, condition, condition_detail, location, phone_contact } = req.body;
     const { Product, ProductImage, Category } = getModels();
 
     // Tạo hoặc lấy danh mục nhập tay, hoặc kiểm tra danh mục đã chọn.
@@ -266,6 +266,7 @@ const createProduct = async (req, res) => {
       description: description.trim(),
       price: parseFloat(price),
       condition: condition || 'used',
+      condition_detail: condition === 'other' && condition_detail ? condition_detail.trim().slice(0, 100) : null,
       location: location.trim(),
       phone_contact: phone_contact || req.user.phone || null,
       status: initialStatus
@@ -309,7 +310,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, price, category_id, category_name, brand, model, condition, location, phone_contact, remove_image_ids } = req.body;
+    const { title, description, price, category_id, category_name, brand, model, condition, condition_detail, location, phone_contact, remove_image_ids } = req.body;
     const { Product, ProductImage, Category } = getModels();
 
     const product = await Product.findByPk(id, {
@@ -350,7 +351,10 @@ const updateProduct = async (req, res) => {
     if (model !== undefined) product.model = model.trim().slice(0, 100) || null;
     if (description) product.description = description.trim();
     if (price !== undefined) product.price = parseFloat(price);
-    if (condition) product.condition = condition;
+    if (condition) {
+      product.condition = condition;
+      product.condition_detail = condition === 'other' && condition_detail ? condition_detail.trim().slice(0, 100) : null;
+    }
     if (location) product.location = location.trim();
     if (phone_contact !== undefined) product.phone_contact = phone_contact;
 

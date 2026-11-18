@@ -2,6 +2,9 @@ let currentProduct = null;
 let sellerPhone = '';
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('price-offer-amount')?.addEventListener('input', (event) => {
+    event.currentTarget.setCustomValidity('');
+  });
   const urlParts = window.location.pathname.split('/');
   const productId = urlParts[urlParts.length - 1];
   if (productId) {
@@ -41,7 +44,7 @@ async function loadProductDetail(id) {
     document.getElementById('detail-title').innerText = product.title;
     document.getElementById('detail-price').innerText = PatuhiApp.formatPrice(product.price);
     document.getElementById('detail-location').innerText = product.location;
-    document.getElementById('detail-time').innerText = PatuhiApp.formatTimeAgo(product.created_at);
+    document.getElementById('detail-time').innerText = PatuhiApp.formatTimeAgo(product.created_at || product.createdAt);
     document.getElementById('detail-views').innerText = product.views;
     document.getElementById('detail-description').innerText = product.description;
     for (const field of ['brand', 'model']) {
@@ -58,6 +61,9 @@ async function loadProductDetail(id) {
     } else if (product.condition === 'like_new') {
       condElem.innerText = 'Như mới 99%';
       condElem.className = 'badge bg-info text-dark condition-badge';
+    } else if (product.condition === 'other') {
+      condElem.innerText = product.condition_detail || 'Tình trạng khác';
+      condElem.className = 'badge bg-secondary condition-badge';
     } else {
       condElem.innerText = 'Đã qua sử dụng';
       condElem.className = 'badge bg-secondary condition-badge';
@@ -100,6 +106,7 @@ async function loadProductDetail(id) {
           <i class="bi bi-chat-dots-fill me-1"></i> Chat với người bán
         </button>
       `;
+      document.getElementById('price-negotiation').hidden = false;
     }
 
     // Show containers
@@ -213,6 +220,75 @@ async function startChatWithSeller() {
     }
   } catch (e) {
     PatuhiApp.showToast('Không thể mở cuộc trò chuyện lúc này.', 'danger');
+  }
+}
+
+function openPriceOfferModal() {
+  if (!PatuhiApp.currentUser) {
+    PatuhiApp.showToast('Vui lòng đăng nhập để thương lượng giá!', 'warning');
+    setTimeout(() => {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    }, 1000);
+    return;
+  }
+
+  document.getElementById('offer-listed-price').textContent = PatuhiApp.formatPrice(currentProduct.price);
+  const amountInput = document.getElementById('price-offer-amount');
+  amountInput.value = '';
+  amountInput.max = Math.floor(Number(currentProduct.price));
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('priceOfferModal')).show();
+}
+
+async function submitPriceOffer(event) {
+  event.preventDefault();
+  if (!currentProduct || !PatuhiApp.currentUser) return;
+
+  const amountInput = document.getElementById('price-offer-amount');
+  const amount = Number(amountInput.value);
+  const listedPrice = Number(currentProduct.price);
+  if (!Number.isFinite(amount) || amount < 1000 || amount >= listedPrice) {
+    amountInput.setCustomValidity('Giá đề nghị phải thấp hơn giá niêm yết.');
+    amountInput.reportValidity();
+    return;
+  }
+  amountInput.setCustomValidity('');
+
+  const submitButton = document.getElementById('btn-send-price-offer');
+  submitButton.disabled = true;
+  try {
+    const headers = {
+      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+      'Content-Type': 'application/json'
+    };
+    const conversationRes = await fetch('/api/chat/conversations', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ productId: currentProduct.id })
+    });
+    const conversationJson = await conversationRes.json();
+    if (!conversationRes.ok) {
+      PatuhiApp.showToast(conversationJson.message || 'Không thể mở cuộc trò chuyện.', 'danger');
+      return;
+    }
+
+    const content = `Đề nghị giá ${PatuhiApp.formatPrice(amount)} cho sản phẩm "${currentProduct.title}" (giá niêm yết ${PatuhiApp.formatPrice(listedPrice)}).`;
+    const messageRes = await fetch(`/api/chat/conversations/${conversationJson.data.conversationId}/messages`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ content })
+    });
+    const messageJson = await messageRes.json();
+    if (!messageRes.ok) {
+      PatuhiApp.showToast(messageJson.message || 'Không gửi được đề nghị giá.', 'danger');
+      return;
+    }
+
+    bootstrap.Modal.getInstance(document.getElementById('priceOfferModal'))?.hide();
+    window.location.href = `/chat?conversationId=${conversationJson.data.conversationId}`;
+  } catch (error) {
+    PatuhiApp.showToast('Lỗi kết nối khi gửi đề nghị giá.', 'danger');
+  } finally {
+    submitButton.disabled = false;
   }
 }
 

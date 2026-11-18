@@ -195,9 +195,9 @@
               <select class="form-select" id="post-model">
                 <option value="">-- Chọn model --</option>
                 <option>iPhone</option><option>Galaxy</option><option>Redmi</option><option>MacBook</option>
-                <option>ThinkPad</option><option>Air Blade</option><option>Khác</option>
+                <option>ThinkPad</option><option>Air Blade</option><option value="Khác">Tự nhập</option>
               </select>
-              <input type="text" class="form-control mt-2" id="post-model-other" maxlength="100" placeholder="Nhập model khác" hidden>
+              <input type="text" class="form-control mt-2" id="post-model-other" maxlength="100" placeholder="Nhập model" hidden>
             </div>
           </div>
 
@@ -208,7 +208,9 @@
                 <option value="used">Đã qua sử dụng</option>
                 <option value="like_new">Như mới 99%</option>
                 <option value="new">Mới 100% (Nguyên seal/hộp)</option>
+                <option value="other">Tình trạng khác</option>
               </select>
+              <input type="text" class="form-control mt-2" id="post-condition-other" maxlength="100" placeholder="Nhập tình trạng sản phẩm" hidden>
             </div>
             <div class="col-md-6">
               <label for="post-price" class="form-label fw-bold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
