@@ -61,8 +61,23 @@
           </div>
         </div>
 
+        <!-- Image Preview Container -->
+        <div id="image-preview-container" class="px-3 pt-2 bg-light border-top d-none align-items-center gap-2">
+          <div class="position-relative d-inline-block">
+            <img id="image-preview" src="" class="rounded border" style="max-height: 60px; max-width: 90px; object-fit: cover;">
+            <button type="button" class="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; transform: translate(35%, -35%);" onclick="cancelImagePreview()" title="Hủy ảnh">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <span class="small text-muted text-truncate" id="image-preview-name" style="max-width: 250px;"></span>
+        </div>
+
         <!-- Chat Input Form -->
         <form class="p-3 border-top bg-white d-flex gap-2 align-items-center" id="message-form" onsubmit="handleSendMessage(event)">
+          <button type="button" class="btn btn-outline-secondary rounded-circle p-2" id="btn-attach-image" disabled style="width: 42px; height: 42px;" title="Gửi hình ảnh" onclick="document.getElementById('chat-image-input').click()">
+            <i class="bi bi-image"></i>
+          </button>
+          <input type="file" id="chat-image-input" accept="image/*" class="d-none" onchange="handleImageSelected(event)">
           <input type="text" class="form-control rounded-pill px-3" id="message-input" placeholder="Nhập tin nhắn..." autocomplete="off" disabled>
           <button type="submit" class="btn btn-warning rounded-circle p-2" id="btn-send-msg" disabled style="width: 42px; height: 42px;">
             <i class="bi bi-send-fill text-dark"></i>

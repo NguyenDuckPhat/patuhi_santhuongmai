@@ -16,6 +16,19 @@ const ensureProductMetadataColumns = async (sequelize) => {
       defaultValue: 'used'
     });
   }
+
+  // Đảm bảo các cột bổ sung cho bảng messages
+  try {
+    const messageColumns = await queryInterface.describeTable('messages');
+    if (!messageColumns['image_url']) {
+      await queryInterface.addColumn('messages', 'image_url', {
+        type: DataTypes.STRING(255),
+        allowNull: true
+      });
+    }
+  } catch (e) {
+    // Bỏ qua nếu bảng chưa khởi tạo
+  }
 };
 
 module.exports = ensureProductMetadataColumns;

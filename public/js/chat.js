@@ -240,6 +240,9 @@ async function selectConversation(conversationId) {
     // Enable input
     document.getElementById('message-input').disabled = false;
     document.getElementById('btn-send-msg').disabled = false;
+    const btnAttach = document.getElementById('btn-attach-image');
+    if (btnAttach) btnAttach.disabled = false;
+    cancelImagePreview();
     document.getElementById('message-input').focus();
 
     // Render messages
@@ -261,6 +264,51 @@ async function selectConversation(conversationId) {
   }
 }
 
+let selectedChatImage = null;
+
+function handleImageSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    PatuhiApp.showToast('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WebP...)!', 'warning');
+    event.target.value = '';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    PatuhiApp.showToast('Kích thước ảnh tối đa là 5MB!', 'warning');
+    event.target.value = '';
+    return;
+  }
+
+  selectedChatImage = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('image-preview').src = e.target.result;
+    document.getElementById('image-preview-name').textContent = file.name;
+    const previewContainer = document.getElementById('image-preview-container');
+    previewContainer.classList.remove('d-none');
+    previewContainer.classList.add('d-flex');
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelImagePreview() {
+  selectedChatImage = null;
+  const input = document.getElementById('chat-image-input');
+  if (input) input.value = '';
+  const previewContainer = document.getElementById('image-preview-container');
+  if (previewContainer) {
+    previewContainer.classList.add('d-none');
+    previewContainer.classList.remove('d-flex');
+  }
+  const previewImg = document.getElementById('image-preview');
+  if (previewImg) previewImg.src = '';
+  const previewName = document.getElementById('image-preview-name');
+  if (previewName) previewName.textContent = '';
+}
+
 function appendMessage(message) {
   const container = document.getElementById('messages-container');
   const isMine = message.sender_id === myUser.id;
@@ -274,11 +322,22 @@ function appendMessage(message) {
     : 'Vừa xong';
   const isRead = message.is_read === true || message.is_read === 1;
 
+  const imageHtml = message.image_url ? `
+    <div class="message-image mb-2">
+      <a href="${message.image_url}" target="_blank" rel="noopener noreferrer">
+        <img src="${message.image_url}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
+      </a>
+    </div>
+  ` : '';
+
+  const contentHtml = message.content ? `<div>${escapeHtml(message.content)}</div>` : '';
+
   const div = document.createElement('div');
   div.className = `msg-bubble ${isMine ? 'sent' : 'received'}`;
   if (Number.isFinite(messageId)) div.id = `message-${messageId}`;
   div.innerHTML = `
-    <div>${escapeHtml(message.content)}</div>
+    ${imageHtml}
+    ${contentHtml}
     <div class="text-end" style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
       ${timeLabel}
       ${isMine ? `<span class="message-read-status ms-1" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
@@ -333,26 +392,45 @@ async function handleSendMessage(e) {
   e.preventDefault();
   const input = document.getElementById('message-input');
   const content = input.value.trim();
-  if (!content || !activeConversationId) return;
+  if ((!content && !selectedChatImage) || !activeConversationId) return;
 
+  const imageToSend = selectedChatImage;
   input.value = '';
+  cancelImagePreview();
 
   try {
-    const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ content })
-    });
+    let res;
+    if (imageToSend) {
+      const formData = new FormData();
+      if (content) formData.append('content', content);
+      formData.append('image', imageToSend);
+
+      res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: formData
+      });
+    } else {
+      res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
+    }
+
     const json = await res.json();
     if (res.ok) {
       // Nếu socket chưa kết nối, tự thêm thủ công
       if (!socket || !socket.connected) {
         appendMessage(json.data.message);
       }
-      updateConversationLastMessage(activeConversationId, content);
+      const displayLast = content || '[Hình ảnh]';
+      updateConversationLastMessage(activeConversationId, displayLast);
     } else {
       PatuhiApp.showToast(json.message, 'danger');
     }

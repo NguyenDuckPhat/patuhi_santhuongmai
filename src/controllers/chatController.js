@@ -246,7 +246,7 @@ const getMessages = async (req, res) => {
   }
 };
 
-// 4. Gửi tin nhắn mới
+// 4. Gửi tin nhắn mới (hỗ trợ văn bản và hình ảnh)
 const sendMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -254,10 +254,13 @@ const sendMessage = async (req, res) => {
     const { Conversation, Message, User } = getModels();
     const userId = req.user.id;
 
-    if (!content || !content.trim()) {
+    const hasText = content && typeof content === 'string' && content.trim().length > 0;
+    const hasImage = !!req.file;
+
+    if (!hasText && !hasImage) {
       return res.status(400).json({
         success: false,
-        message: 'Nội dung tin nhắn không được để trống.'
+        message: 'Nội dung tin nhắn hoặc hình ảnh không được để trống.'
       });
     }
 
@@ -269,21 +272,29 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    if (conversation.buyer_id !== userId && conversation.seller_id !== userId) {
+    if (conversation.buyer_id !== userId && conversation.seller_id !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Bạn không thuộc cuộc trò chuyện này.'
       });
     }
 
+    const textContent = hasText ? content.trim() : '';
+    const imageUrl = hasImage ? `/uploads/chats/${req.file.filename}` : null;
+
     const newMessage = await Message.create({
       conversation_id: parseInt(conversationId),
       sender_id: userId,
-      content: content.trim()
+      content: textContent,
+      image_url: imageUrl
     });
 
     // Cập nhật last_message của cuộc hội thoại
-    conversation.last_message = content.trim();
+    let lastMsgText = textContent || '[Hình ảnh]';
+    if (hasImage && hasText) {
+      lastMsgText = `[Hình ảnh] ${textContent}`;
+    }
+    conversation.last_message = lastMsgText;
     conversation.last_message_at = new Date();
     await conversation.save();
 
