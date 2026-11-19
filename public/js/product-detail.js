@@ -78,6 +78,9 @@ async function loadProductDetail(id) {
       : [{ image_url: 'https://placehold.co/600x400?text=Khong+co+anh' }];
 
     document.getElementById('detail-main-img').src = images[0].image_url;
+    document.getElementById('detail-image-counter').textContent = `1/${images.length}`;
+    document.getElementById('detail-image-previous').hidden = images.length < 2;
+    document.getElementById('detail-image-next').hidden = images.length < 2;
 
     const thumbContainer = document.getElementById('detail-thumbnails');
     thumbContainer.innerHTML = images.map((img, idx) => `
@@ -141,8 +144,19 @@ async function loadProductDetail(id) {
 
 function changeMainImage(url, elem) {
   document.getElementById('detail-main-img').src = url;
-  document.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));
+  const thumbnails = Array.from(document.querySelectorAll('#detail-thumbnails .thumb-img'));
+  thumbnails.forEach(t => t.classList.remove('active'));
   elem.classList.add('active');
+  document.getElementById('detail-image-counter').textContent = `${thumbnails.indexOf(elem) + 1}/${thumbnails.length}`;
+}
+
+function navigateProductImage(direction) {
+  const thumbnails = Array.from(document.querySelectorAll('#detail-thumbnails .thumb-img'));
+  if (thumbnails.length < 2) return;
+
+  const currentIndex = thumbnails.findIndex(thumbnail => thumbnail.classList.contains('active'));
+  const nextIndex = (currentIndex + direction + thumbnails.length) % thumbnails.length;
+  thumbnails[nextIndex].click();
 }
 
 function revealPhone() {

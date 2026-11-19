@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .main-img-box {
+      position: relative;
       width: 100%;
       height: 420px;
       background: #f8f9fa;
@@ -18,6 +19,34 @@
       align-items: center;
       justify-content: center;
     }
+    .image-counter {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+    .image-nav-button {
+      position: absolute;
+      top: 50%;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      transform: translateY(-50%);
+    }
+    .image-nav-button:hover { background: rgba(0, 0, 0, 0.75); }
+    .image-nav-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .image-nav-previous { left: 12px; }
+    .image-nav-next { right: 12px; }
     .main-img-box img {
       max-width: 100%;
       max-height: 100%;
@@ -74,6 +103,13 @@
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
           <div class="main-img-box mb-3">
             <img id="detail-main-img" src="" alt="Sản phẩm">
+            <button type="button" class="image-nav-button image-nav-previous" id="detail-image-previous" onclick="navigateProductImage(-1)" aria-label="Ảnh trước" hidden>
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="image-nav-button image-nav-next" id="detail-image-next" onclick="navigateProductImage(1)" aria-label="Ảnh tiếp theo" hidden>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <span class="image-counter" id="detail-image-counter" aria-live="polite">1/1</span>
           </div>
           <div class="d-flex gap-2 overflow-auto pb-2" id="detail-thumbnails">
             <!-- Thumbs -->
