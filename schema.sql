@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `content` TEXT NULL,
   `image_url` VARCHAR(255) NULL,
   `is_read` BOOLEAN DEFAULT FALSE,
+  `is_recalled` BOOLEAN DEFAULT FALSE,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`conversation_id`) REFERENCES `conversations`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE

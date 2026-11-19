@@ -26,6 +26,12 @@ const ensureProductMetadataColumns = async (sequelize) => {
         allowNull: true
       });
     }
+    if (!messageColumns['is_recalled']) {
+      await queryInterface.addColumn('messages', 'is_recalled', {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      });
+    }
   } catch (e) {
     // Bỏ qua nếu bảng chưa khởi tạo
   }

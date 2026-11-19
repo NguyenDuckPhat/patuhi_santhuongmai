@@ -29,6 +29,10 @@ module.exports = (sequelize) => {
       is_read: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+      },
+      is_recalled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
       }
     },
     {
