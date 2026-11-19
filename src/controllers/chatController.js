@@ -214,7 +214,18 @@ const getMessages = async (req, res) => {
     }
 
     // Load after marking read so the viewer receives the current receipt state.
-    const messages = await Message.findAll({
+    const totalMessages = await Message.count({ where: { conversation_id: conversationId } });
+
+    const limitQuery = req.query.limit !== undefined ? parseInt(req.query.limit, 10) : 30;
+    const pageQuery = req.query.page !== undefined ? parseInt(req.query.page, 10) : 1;
+    const validLimit = Math.max(1, isNaN(limitQuery) ? 30 : limitQuery);
+    const validPage = Math.max(1, isNaN(pageQuery) ? 1 : pageQuery);
+    const offset = req.query.offset !== undefined 
+      ? Math.max(0, parseInt(req.query.offset, 10)) 
+      : (validPage - 1) * validLimit;
+
+    // Lấy tin nhắn theo thứ tự mới nhất trước để phục vụ phân trang
+    const rawMessages = await Message.findAll({
       where: { conversation_id: conversationId },
       include: [
         {
@@ -223,8 +234,13 @@ const getMessages = async (req, res) => {
           attributes: ['id', 'username', 'full_name', 'avatar']
         }
       ],
-      order: [['created_at', 'ASC']]
+      order: [['created_at', 'DESC']],
+      limit: validLimit,
+      offset
     });
+
+    // Đảo ngược lại để hiển thị từ cũ đến mới (trên xuống dưới)
+    const messages = rawMessages.reverse();
 
     const convData = conversation.toJSON();
     convData.otherParty = convData.buyer_id === userId ? convData.seller : convData.buyer;
@@ -233,7 +249,14 @@ const getMessages = async (req, res) => {
       success: true,
       data: {
         conversation: convData,
-        messages
+        messages,
+        pagination: {
+          total: totalMessages,
+          page: validPage,
+          limit: validLimit,
+          totalPages: Math.ceil(totalMessages / validLimit),
+          hasMore: offset + rawMessages.length < totalMessages
+        }
       }
     });
   } catch (error) {

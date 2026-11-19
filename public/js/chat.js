@@ -6,6 +6,11 @@ let chatAudioContext = null;
 let chatSoundEnabled = localStorage.getItem('chatSoundEnabled') === 'true';
 let chatSoundReady = false;
 
+// Quản lý phân trang tin nhắn
+let currentChatPage = 1;
+let hasMoreMessages = false;
+let isLoadingMore = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
   updateChatSoundButton();
   const enableSoundAfterGesture = () => {
@@ -206,8 +211,11 @@ async function selectConversation(conversationId) {
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '<div class="text-center py-5 text-muted">Đang tải tin nhắn...</div>';
 
+  currentChatPage = 1;
+  hasMoreMessages = false;
+
   try {
-    const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+    const res = await fetch(`/api/chat/conversations/${conversationId}/messages?page=1&limit=20`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
       }
@@ -218,7 +226,8 @@ async function selectConversation(conversationId) {
       return;
     }
 
-    const { conversation, messages } = json.data;
+    const { conversation, messages, pagination } = json.data;
+    hasMoreMessages = pagination?.hasMore || false;
     const other = conversation.otherParty || {};
     const prod = conversation.product || {};
 
@@ -253,8 +262,17 @@ async function selectConversation(conversationId) {
         </div>
       `;
     } else {
-      messagesContainer.innerHTML = '';
-      messages.forEach(m => appendMessage(m));
+      messagesContainer.innerHTML = `
+        <div id="load-more-container" class="text-center py-2 ${hasMoreMessages ? '' : 'd-none'}">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-load-more" onclick="loadMoreMessages()">
+            <i class="bi bi-arrow-up-circle me-1"></i> Tải tin nhắn cũ hơn
+          </button>
+        </div>
+      `;
+      messages.forEach(m => {
+        const bubble = createMessageElement(m);
+        if (bubble) messagesContainer.appendChild(bubble);
+      });
       scrollToBottom();
     }
     refreshReadStatus(conversationId);
@@ -309,11 +327,10 @@ function cancelImagePreview() {
   if (previewName) previewName.textContent = '';
 }
 
-function appendMessage(message) {
-  const container = document.getElementById('messages-container');
+function createMessageElement(message) {
   const isMine = message.sender_id === myUser.id;
   const messageId = Number(message.id);
-  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
+  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return null;
 
   const createdAt = message.created_at || message.createdAt || message.timestamp;
   const parsedDate = createdAt ? new Date(createdAt) : null;
@@ -343,8 +360,75 @@ function appendMessage(message) {
       ${isMine ? `<span class="message-read-status ms-1" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
     </div>
   `;
-  container.appendChild(div);
-  scrollToBottom();
+  return div;
+}
+
+function appendMessage(message) {
+  const container = document.getElementById('messages-container');
+  const bubble = createMessageElement(message);
+  if (bubble) {
+    container.appendChild(bubble);
+    scrollToBottom();
+  }
+}
+
+async function loadMoreMessages() {
+  if (isLoadingMore || !hasMoreMessages || !activeConversationId) return;
+
+  const btn = document.getElementById('btn-load-more');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang tải...';
+  }
+  isLoadingMore = true;
+
+  try {
+    const nextPage = currentChatPage + 1;
+    const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages?page=${nextPage}&limit=20`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    const json = await res.json();
+    if (res.ok) {
+      currentChatPage = nextPage;
+      const { messages, pagination } = json.data;
+      hasMoreMessages = pagination?.hasMore || false;
+
+      const container = document.getElementById('messages-container');
+      const prevScrollHeight = container.scrollHeight;
+
+      // Chèn các tin nhắn cũ lên đầu danh sách (dưới nút load more)
+      const loadMoreContainer = document.getElementById('load-more-container');
+      // Duyệt ngược để giữ thứ tự từ cũ đến mới khi chèn sau loadMoreContainer
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const bubble = createMessageElement(messages[i]);
+        if (bubble) {
+          if (loadMoreContainer && loadMoreContainer.nextSibling) {
+            container.insertBefore(bubble, loadMoreContainer.nextSibling);
+          } else {
+            container.prepend(bubble);
+          }
+        }
+      }
+
+      // Giữ nguyên vị trí cuộn của người dùng sau khi tải thêm tin cũ
+      container.scrollTop = container.scrollHeight - prevScrollHeight;
+
+      if (!hasMoreMessages && loadMoreContainer) {
+        loadMoreContainer.classList.add('d-none');
+      }
+    }
+  } catch (err) {
+    PatuhiApp.showToast('Lỗi khi tải thêm tin nhắn.', 'danger');
+  } finally {
+    isLoadingMore = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
 }
 
 function markMyMessagesAsRead() {
