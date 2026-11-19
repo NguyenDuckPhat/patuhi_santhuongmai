@@ -55,18 +55,34 @@ async function loadProductDetail(id) {
 
     // Condition
     const condElem = document.getElementById('detail-condition');
+    const condDetailElem = document.getElementById('detail-condition-detail');
     if (product.condition === 'new') {
       condElem.innerText = 'Mới 100%';
       condElem.className = 'badge bg-success condition-badge';
+      condDetailElem.hidden = true;
     } else if (product.condition === 'like_new') {
       condElem.innerText = 'Như mới 99%';
       condElem.className = 'badge bg-info text-dark condition-badge';
+      condDetailElem.hidden = true;
     } else if (product.condition === 'other') {
       condElem.innerText = product.condition_detail || 'Tình trạng khác';
       condElem.className = 'badge bg-secondary condition-badge';
+      if (product.condition_detail) {
+        condDetailElem.textContent = product.condition_detail;
+        condDetailElem.hidden = false;
+      } else {
+        condDetailElem.hidden = true;
+      }
     } else {
+      // used or default
       condElem.innerText = 'Đã qua sử dụng';
       condElem.className = 'badge bg-secondary condition-badge';
+      if (product.condition_detail) {
+        condDetailElem.textContent = product.condition_detail;
+        condDetailElem.hidden = false;
+      } else {
+        condDetailElem.hidden = true;
+      }
     }
 
     // Favorite Button Status

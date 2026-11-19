@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `status` ENUM('pending', 'approved', 'rejected', 'sold', 'hidden') DEFAULT 'pending',
   `rejection_reason` VARCHAR(255) NULL,
   `views` INT DEFAULT 0,
+  `specs` TEXT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,

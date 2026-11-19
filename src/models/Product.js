@@ -48,6 +48,10 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(100),
         allowNull: true
       },
+      specs: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
       location: {
         type: DataTypes.STRING(150),
         allowNull: false
