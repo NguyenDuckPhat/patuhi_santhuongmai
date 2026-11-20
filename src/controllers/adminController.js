@@ -403,11 +403,37 @@ const processReport = async (req, res) => {
 // Danh sách bình luận theo trạng thái (mặc định PENDING để duyệt)
 const getCommentsForAdmin = async (req, res) => {
   try {
-    const { status = 'PENDING', page = 1, limit = 20 } = req.query;
-    const { Comment, User, Product } = getModels();
+    const { status = 'PENDING', page = 1, limit = 20, q = '' } = req.query;
+    const { Comment, User, Product, ProductImage } = getModels();
 
     const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'all'];
     const where = allowedStatuses.includes(status) && status !== 'all' ? { status } : {};
+
+    // Tìm kiếm theo tên sản phẩm, tên người dùng hoặc nội dung bình luận.
+    // Dùng Op.like (Sequelize tự tham số hóa) thay vì nối chuỗi SQL.
+    const keyword = typeof q === 'string' ? q.trim() : '';
+    if (keyword) {
+      const pattern = `%${keyword}%`;
+      const [matchingProducts, matchingUsers] = await Promise.all([
+        Product.findAll({ attributes: ['id'], where: { title: { [Op.like]: pattern } } }),
+        User.findAll({
+          attributes: ['id'],
+          where: {
+            [Op.or]: [
+              { full_name: { [Op.like]: pattern } },
+              { username: { [Op.like]: pattern } }
+            ]
+          }
+        })
+      ]);
+
+      where[Op.or] = [
+        { content: { [Op.like]: pattern } },
+        { product_id: { [Op.in]: matchingProducts.map(p => p.id) } },
+        { user_id: { [Op.in]: matchingUsers.map(u => u.id) } }
+      ];
+    }
+
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
 
@@ -415,7 +441,12 @@ const getCommentsForAdmin = async (req, res) => {
       where,
       include: [
         { model: User, as: 'user', attributes: ['id', 'username', 'full_name', 'avatar'] },
-        { model: Product, as: 'product', attributes: ['id', 'title'] }
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'title'],
+          include: [{ model: ProductImage, as: 'images', attributes: ['image_url', 'is_primary'] }]
+        }
       ],
       order: [['created_at', 'DESC']],
       limit: limitNum,
@@ -471,6 +502,27 @@ const reviewComment = async (req, res) => {
   }
 };
 
+// Xóa bình luận không phù hợp (id lấy từ URL, không tin dữ liệu từ body)
+const deleteComment = async (req, res) => {
+  try {
+    const { Comment } = getModels();
+    const comment = await Comment.findByPk(req.params.id);
+    if (!comment) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bình luận.' });
+    }
+
+    await comment.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Đã xóa bình luận thành công!'
+    });
+  } catch (error) {
+    console.error('Lỗi xóa bình luận:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi khi xóa bình luận.' });
+  }
+};
+
 // ==========================================
 // 6. THỐNG KÊ (DASHBOARD STATS)
 // ==========================================
@@ -517,7 +569,10 @@ const getDashboardStats = async (req, res) => {
     const dismissedReports = await Report.count({ where: { status: 'dismissed' } });
 
     // 4. Thống kê bình luận
+    const totalComments = await Comment.count();
     const pendingComments = await Comment.count({ where: { status: 'PENDING' } });
+    const approvedComments = await Comment.count({ where: { status: 'APPROVED' } });
+    const rejectedComments = await Comment.count({ where: { status: 'REJECTED' } });
 
     return res.status(200).json({
       success: true,
@@ -544,7 +599,10 @@ const getDashboardStats = async (req, res) => {
           dismissed: dismissedReports
         },
         comments: {
-          pending: pendingComments
+          total: totalComments,
+          pending: pendingComments,
+          approved: approvedComments,
+          rejected: rejectedComments
         }
       }
     });
@@ -567,5 +625,6 @@ module.exports = {
   processReport,
   getCommentsForAdmin,
   reviewComment,
+  deleteComment,
   getDashboardStats
 };

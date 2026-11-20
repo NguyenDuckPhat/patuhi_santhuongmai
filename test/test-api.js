@@ -429,6 +429,91 @@ const runTests = async () => {
     }, memberToken);
     assert(noPublicStatusRes.status === 404, '48. Không có API public cho phép đổi trạng thái bình luận');
 
+    // ----------------------------------------------------
+    // TEST 10: QUẢN LÝ BÌNH LUẬN NÂNG CAO (Admin)
+    // ----------------------------------------------------
+    console.log('\n📌 NHÓM 10: QUẢN LÝ BÌNH LUẬN NÂNG CAO (Admin)');
+
+    const commentStatsRes = await request('GET', '/api/admin/dashboard/stats', null, adminToken);
+    const commentStats = commentStatsRes.data.data.comments;
+    assert(
+      commentStatsRes.status === 200 &&
+      ['total', 'pending', 'approved', 'rejected'].every(k => typeof commentStats[k] === 'number') &&
+      commentStats.total === commentStats.pending + commentStats.approved + commentStats.rejected,
+      '49. Thống kê đủ tổng/chờ duyệt/đã duyệt/từ chối bình luận'
+    );
+
+    const searchByProductRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(otherProduct.title)}`, null, adminToken);
+    assert(
+      searchByProductRes.status === 200 && searchByProductRes.data.data.comments.some(c => c.id === newCommentId),
+      '50. Tìm kiếm bình luận theo tên sản phẩm'
+    );
+
+    const searchByUsernameRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(memberUser.username)}`, null, adminToken);
+    assert(
+      searchByUsernameRes.status === 200 && searchByUsernameRes.data.data.comments.some(c => c.id === newCommentId),
+      '51. Tìm kiếm bình luận theo tên đăng nhập người dùng'
+    );
+
+    const searchByFullNameRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(updateProfileRes.data.data.user.full_name)}`, null, adminToken);
+    assert(
+      searchByFullNameRes.status === 200 && searchByFullNameRes.data.data.comments.some(c => c.id === newCommentId),
+      '52. Tìm kiếm bình luận theo họ tên người dùng'
+    );
+
+    const searchByContentRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent('dữ liệu giả mạo')}`, null, adminToken);
+    assert(
+      searchByContentRes.status === 200 && searchByContentRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '53. Tìm kiếm bình luận theo nội dung'
+    );
+
+    const searchNoResultRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent('chuỗi-khong-ton-tai-xyz-999')}`, null, adminToken);
+    assert(
+      searchNoResultRes.status === 200 && searchNoResultRes.data.data.comments.length === 0,
+      '54. Tìm kiếm không trùng trả về danh sách rỗng'
+    );
+
+    const commentWithImageRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(otherProduct.title)}`, null, adminToken);
+    assert(
+      commentWithImageRes.status === 200 &&
+      Array.isArray(commentWithImageRes.data.data.comments[0].product.images),
+      '55. API Admin trả về hình ảnh sản phẩm để hiển thị cột ảnh'
+    );
+
+    const memberAdminListRes = await request('GET', '/api/admin/comments?status=all', null, memberToken);
+    assert(memberAdminListRes.status === 403, '56. Thành viên không được gọi API danh sách bình luận Admin');
+
+    const memberDeleteRes = await request('DELETE', `/api/admin/comments/${forgedComment.id}`, null, memberToken);
+    assert(memberDeleteRes.status === 403, '57. Thành viên không được xóa bình luận');
+
+    const invalidActionRes = await request('PATCH', `/api/admin/comments/${newCommentId}/review`, {
+      action: 'unknown'
+    }, adminToken);
+    assert(invalidActionRes.status === 400, '58. Từ chối action duyệt không hợp lệ');
+
+    const approveForgedRes = await request('PATCH', `/api/admin/comments/${forgedComment.id}/review`, {
+      action: 'approve'
+    }, adminToken);
+    assert(approveForgedRes.status === 200, '59. Admin duyệt bình luận trước khi xóa');
+
+    const publicBeforeDeleteRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      publicBeforeDeleteRes.status === 200 && publicBeforeDeleteRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '60. Bình luận đã duyệt hiển thị công khai trước khi xóa'
+    );
+
+    const deleteCommentRes = await request('DELETE', `/api/admin/comments/${forgedComment.id}`, null, adminToken);
+    assert(deleteCommentRes.status === 200, '61. Admin xóa bình luận thành công');
+
+    const deletedCommentRes = await models.Comment.findByPk(forgedComment.id);
+    assert(deletedCommentRes === null, '62. Bản ghi bình luận đã bị xóa khỏi database');
+
+    const publicAfterDeleteRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      publicAfterDeleteRes.status === 200 && !publicAfterDeleteRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '63. Bình luận sau khi xóa biến mất khỏi trang công khai'
+    );
+
     // Dọn dẹp dữ liệu bình luận của riêng kịch bản test
     const testCommentIds = [forgedRes.data.data.comment.id, newCommentId].filter(Boolean);
     if (testCommentIds.length > 0) {
