@@ -27,4 +27,8 @@ router.delete('/categories/:id', adminController.deleteCategory);
 router.get('/reports', adminController.getReports);
 router.patch('/reports/:id/process', adminController.processReport);
 
+// 6. Quản lý bình luận sản phẩm
+router.get('/comments', adminController.getCommentsForAdmin);
+router.patch('/comments/:id/review', adminController.reviewComment);
+
 module.exports = router;

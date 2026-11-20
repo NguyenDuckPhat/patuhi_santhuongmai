@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function switchAdminTab(tab) {
-  ['pending', 'users', 'categories', 'reports'].forEach(t => {
+  ['pending', 'users', 'categories', 'reports', 'comments'].forEach(t => {
     document.getElementById(`admin-tab-${t}`).classList.add('d-none');
     document.getElementById(`tab-btn-${t}`).classList.remove('active');
   });
@@ -27,6 +27,7 @@ function switchAdminTab(tab) {
   else if (tab === 'users') loadAdminUsers();
   else if (tab === 'categories') loadAdminCategories();
   else if (tab === 'reports') loadAdminReports();
+  else if (tab === 'comments') loadAdminComments();
 }
 
 // 1. Tải Thống Kê Tổng Quan (Requirements 32, 33, 34)
@@ -53,6 +54,9 @@ async function loadDashboardStats() {
 
     document.getElementById('stat-total-reports').innerText = reports.total;
     document.getElementById('stat-pending-reports').innerText = `${reports.pending} Chờ xử lý`;
+
+    const pendingComments = json.data.comments ? json.data.comments.pending : 0;
+    document.getElementById('badge-pending-comments').innerText = pendingComments;
   } catch (err) {
     console.error('Lỗi tải thống kê:', err);
   }
@@ -551,5 +555,135 @@ async function processReportAction(id, status, hide_product) {
     }
   } catch (e) {
     PatuhiApp.showToast('Lỗi xử lý báo cáo.', 'danger');
+  }
+}
+
+// 6. Quản Lý Bình Luận Sản Phẩm
+function escapeCommentHtml(value) {
+  return String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[ch]);
+}
+
+async function loadAdminComments() {
+  const container = document.getElementById('admin-comments-container');
+  const status = document.getElementById('comment-status-filter').value;
+
+  container.innerHTML = '<div class="text-center py-4 text-muted">Đang tải bình luận...</div>';
+
+  try {
+    const res = await fetch(`/api/admin/comments?status=${encodeURIComponent(status)}&limit=50`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      container.innerHTML = `<div class="alert alert-danger">${escapeCommentHtml(json.message)}</div>`;
+      return;
+    }
+
+    const { comments = [] } = json.data || {};
+    if (comments.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted">Không có bình luận nào phù hợp!</div>';
+      return;
+    }
+
+    const statusInfo = {
+      PENDING: { label: 'Chờ duyệt', badge: 'bg-warning text-dark' },
+      APPROVED: { label: 'Đã duyệt', badge: 'bg-success' },
+      REJECTED: { label: 'Bị từ chối', badge: 'bg-danger' }
+    };
+
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Người bình luận</th>
+              <th>Sản phẩm</th>
+              <th>Nội dung</th>
+              <th>Trạng thái</th>
+              <th>Thời gian</th>
+              <th class="text-end">Thao tác duyệt</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${comments.map(c => {
+              const user = c.user || {};
+              const product = c.product || {};
+              const st = statusInfo[c.status] || statusInfo.PENDING;
+              const name = escapeCommentHtml(user.full_name || user.username || 'Người dùng');
+              const username = escapeCommentHtml(user.username || '');
+              const avatar = escapeCommentHtml(user.avatar || '/uploads/avatars/default.png');
+              const productTitle = escapeCommentHtml(product.title || '(Sản phẩm đã gỡ)');
+              const content = escapeCommentHtml(c.content);
+              const time = escapeCommentHtml(PatuhiApp.formatTimeAgo(c.created_at || c.createdAt));
+
+              return `
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <img src="${avatar}" width="38" height="38" class="rounded-circle" style="object-fit:cover;" onerror="this.style.display='none'">
+                      <div>
+                        <div class="small fw-semibold">${name}</div>
+                        <div class="text-muted small">@${username}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    ${product.id ? `<a href="/product/${Number(product.id)}" target="_blank" class="text-decoration-none small fw-semibold">${productTitle}</a>` : `<span class="text-muted small">${productTitle}</span>`}
+                  </td>
+                  <td>
+                    <div class="small text-secondary" style="max-width: 360px; white-space: pre-wrap; word-break: break-word;">${content}</div>
+                  </td>
+                  <td><span class="badge ${st.badge}">${escapeCommentHtml(st.label)}</span></td>
+                  <td class="text-muted small text-nowrap">${time}</td>
+                  <td class="text-end text-nowrap">
+                    ${c.status !== 'APPROVED' ? `
+                      <button class="btn btn-sm btn-success rounded-pill px-3 me-1" onclick="reviewCommentAction(${Number(c.id)}, 'approve')">
+                        <i class="bi bi-check-lg me-1"></i> Duyệt
+                      </button>
+                    ` : ''}
+                    ${c.status !== 'REJECTED' ? `
+                      <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="reviewCommentAction(${Number(c.id)}, 'reject')">
+                        <i class="bi bi-x-lg me-1"></i> Từ chối
+                      </button>
+                    ` : ''}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="alert alert-danger">Lỗi kết nối tải bình luận.</div>';
+  }
+}
+
+async function reviewCommentAction(id, action) {
+  try {
+    const res = await fetch(`/api/admin/comments/${id}/review`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      PatuhiApp.showToast(json.message, 'success');
+      loadAdminComments();
+      loadDashboardStats();
+    } else {
+      PatuhiApp.showToast(json.message, 'danger');
+    }
+  } catch (e) {
+    PatuhiApp.showToast('Lỗi máy chủ khi duyệt bình luận.', 'danger');
   }
 }

@@ -397,12 +397,87 @@ const processReport = async (req, res) => {
 };
 
 // ==========================================
-// 5. THỐNG KÊ (DASHBOARD STATS)
+// 5. QUẢN LÝ BÌNH LUẬN SẢN PHẨM
+// ==========================================
+
+// Danh sách bình luận theo trạng thái (mặc định PENDING để duyệt)
+const getCommentsForAdmin = async (req, res) => {
+  try {
+    const { status = 'PENDING', page = 1, limit = 20 } = req.query;
+    const { Comment, User, Product } = getModels();
+
+    const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'all'];
+    const where = allowedStatuses.includes(status) && status !== 'all' ? { status } : {};
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+
+    const { count, rows } = await Comment.findAndCountAll({
+      where,
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'username', 'full_name', 'avatar'] },
+        { model: Product, as: 'product', attributes: ['id', 'title'] }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: limitNum,
+      offset: (pageNum - 1) * limitNum,
+      distinct: true
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        total: count,
+        page: pageNum,
+        totalPages: Math.ceil(count / limitNum),
+        comments: rows
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi lấy danh sách bình luận:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi tải danh sách bình luận.' });
+  }
+};
+
+// Duyệt hoặc từ chối bình luận
+const reviewComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body || {};
+    const { Comment } = getModels();
+
+    const comment = await Comment.findByPk(id);
+    if (!comment) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bình luận.' });
+    }
+
+    if (action === 'approve') {
+      comment.status = 'APPROVED';
+    } else if (action === 'reject') {
+      comment.status = 'REJECTED';
+    } else {
+      return res.status(400).json({ success: false, message: 'Hành động không hợp lệ (approve hoặc reject).' });
+    }
+
+    await comment.save();
+
+    return res.status(200).json({
+      success: true,
+      message: action === 'approve' ? 'Đã duyệt bình luận thành công!' : 'Đã từ chối bình luận!',
+      data: { comment }
+    });
+  } catch (error) {
+    console.error('Lỗi duyệt bình luận:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi khi xử lý bình luận.' });
+  }
+};
+
+// ==========================================
+// 6. THỐNG KÊ (DASHBOARD STATS)
 // ==========================================
 
 const getDashboardStats = async (req, res) => {
   try {
-    const { User, Product, Report, Category } = getModels();
+    const { User, Product, Report, Category, Comment } = getModels();
 
     // 1. Thống kê người dùng
     const totalUsers = await User.count();
@@ -441,6 +516,9 @@ const getDashboardStats = async (req, res) => {
     const resolvedReports = await Report.count({ where: { status: 'resolved' } });
     const dismissedReports = await Report.count({ where: { status: 'dismissed' } });
 
+    // 4. Thống kê bình luận
+    const pendingComments = await Comment.count({ where: { status: 'PENDING' } });
+
     return res.status(200).json({
       success: true,
       data: {
@@ -464,6 +542,9 @@ const getDashboardStats = async (req, res) => {
           pending: pendingReports,
           resolved: resolvedReports,
           dismissed: dismissedReports
+        },
+        comments: {
+          pending: pendingComments
         }
       }
     });
@@ -484,5 +565,7 @@ module.exports = {
   deleteCategory,
   getReports,
   processReport,
+  getCommentsForAdmin,
+  reviewComment,
   getDashboardStats
 };

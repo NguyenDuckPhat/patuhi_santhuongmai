@@ -118,6 +118,11 @@
           <i class="bi bi-flag-fill me-1"></i> Xử Lý Báo Cáo Vi Phạm
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link fw-semibold" id="tab-btn-comments" onclick="switchAdminTab('comments')">
+          <i class="bi bi-chat-dots-fill me-1"></i> Quản Lý Bình Luận (<span id="badge-pending-comments">0</span>)
+        </button>
+      </li>
     </ul>
 
     <!-- Tab 1: Duyệt Tin Đăng (Requirement 27) -->
@@ -188,6 +193,22 @@
       </div>
       <div id="admin-reports-container">
         <div class="text-center py-4 text-muted">Đang tải báo cáo...</div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Quản Lý Bình Luận Sản Phẩm -->
+    <div id="admin-tab-comments" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Bình luận sản phẩm từ người dùng</h5>
+        <select id="comment-status-filter" class="form-select form-select-sm w-auto" onchange="loadAdminComments()">
+          <option value="PENDING" selected>Chờ duyệt (Pending)</option>
+          <option value="APPROVED">Đã duyệt (Approved)</option>
+          <option value="REJECTED">Bị từ chối (Rejected)</option>
+          <option value="all">Tất cả bình luận</option>
+        </select>
+      </div>
+      <div id="admin-comments-container">
+        <div class="text-center py-4 text-muted">Đang tải bình luận...</div>
       </div>
     </div>
   </div>

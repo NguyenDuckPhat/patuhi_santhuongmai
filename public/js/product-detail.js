@@ -1,5 +1,6 @@
 let currentProduct = null;
 let sellerPhone = '';
+let commentProductId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('price-offer-amount')?.addEventListener('input', (event) => {
@@ -9,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const productId = urlParts[urlParts.length - 1];
   if (productId) {
     loadProductDetail(productId);
+    initComments(productId);
   }
 });
 
@@ -356,5 +358,165 @@ async function submitReport(event) {
     }
   } catch (e) {
     PatuhiApp.showToast('Lỗi khi gửi báo cáo.', 'danger');
+  }
+}
+
+// ==========================================
+// BÌNH LUẬN SẢN PHẨM (chỉ hiển thị bình luận đã được Admin duyệt)
+// ==========================================
+
+function setCommentAvatar(imageElement, name) {
+  imageElement.onerror = function () {
+    this.onerror = null;
+    this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=ff8800&color=fff`;
+  };
+}
+
+function buildCommentElement(comment) {
+  const user = comment.user || {};
+  const displayName = user.full_name || user.username || 'Người dùng';
+
+  const item = document.createElement('div');
+  item.className = 'comment-item';
+
+  const header = document.createElement('div');
+  header.className = 'd-flex align-items-center gap-2 mb-2';
+
+  const avatar = document.createElement('img');
+  avatar.className = 'rounded-circle comment-avatar';
+  avatar.width = 42;
+  avatar.height = 42;
+  avatar.alt = 'Avatar người bình luận';
+  avatar.src = user.avatar || '/uploads/avatars/default.png';
+  setCommentAvatar(avatar, displayName);
+
+  const info = document.createElement('div');
+  const name = document.createElement('div');
+  name.className = 'fw-semibold small';
+  name.textContent = displayName;
+  const time = document.createElement('div');
+  time.className = 'text-muted small';
+  time.textContent = PatuhiApp.formatTimeAgo(comment.created_at || comment.createdAt);
+  info.append(name, time);
+
+  header.append(avatar, info);
+  item.appendChild(header);
+
+  const content = document.createElement('div');
+  content.className = 'comment-content text-secondary';
+  content.textContent = comment.content || '';
+  item.appendChild(content);
+
+  return item;
+}
+
+function renderCommentAuth() {
+  const user = PatuhiApp.currentUser;
+  const form = document.getElementById('comment-form');
+  const guest = document.getElementById('comment-guest');
+
+  if (user) {
+    form.classList.remove('d-none');
+    guest.classList.add('d-none');
+    const avatar = document.getElementById('comment-avatar');
+    avatar.src = user.avatar || '/uploads/avatars/default.png';
+    setCommentAvatar(avatar, user.full_name || user.username);
+    document.getElementById('comment-user-name').textContent = user.full_name || user.username || '';
+  } else {
+    form.classList.add('d-none');
+    guest.classList.remove('d-none');
+    document.getElementById('comment-login-link').href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+  }
+}
+
+async function loadComments(productId) {
+  const list = document.getElementById('comment-list');
+  const empty = document.getElementById('comment-empty');
+
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(productId)}/comments`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      list.textContent = 'Không thể tải bình luận lúc này.';
+      document.getElementById('comment-total').textContent = '0 bình luận';
+      return;
+    }
+
+    const { comments = [], total = 0 } = json.data || {};
+    document.getElementById('comment-total').textContent = `${total} bình luận`;
+    list.replaceChildren();
+    comments.forEach(comment => list.appendChild(buildCommentElement(comment)));
+    empty.classList.toggle('d-none', comments.length > 0);
+  } catch (e) {
+    list.textContent = 'Không thể tải bình luận lúc này.';
+  }
+}
+
+async function initComments(productId) {
+  // main.js cũng gọi checkAuth(); gọi lại ở đây để đảm bảo có trạng thái đăng nhập
+  // trước khi quyết định hiển thị form hay thông báo yêu cầu đăng nhập.
+  await PatuhiApp.checkAuth();
+  commentProductId = productId;
+  renderCommentAuth();
+
+  const input = document.getElementById('comment-content');
+  input.addEventListener('input', () => {
+    document.getElementById('comment-counter').textContent = `${input.value.length}/1000`;
+    input.setCustomValidity('');
+  });
+
+  await loadComments(productId);
+}
+
+async function submitComment(event) {
+  event.preventDefault();
+  if (!commentProductId || !PatuhiApp.currentUser) {
+    PatuhiApp.showToast('Vui lòng đăng nhập để bình luận sản phẩm.', 'warning');
+    setTimeout(() => {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    }, 1200);
+    return;
+  }
+
+  const input = document.getElementById('comment-content');
+  const content = input.value.trim();
+  if (!content) {
+    input.setCustomValidity('Vui lòng nhập nội dung bình luận.');
+    input.reportValidity();
+    return;
+  }
+  input.setCustomValidity('');
+
+  const submitButton = document.getElementById('comment-submit');
+  submitButton.disabled = true;
+
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(commentProductId)}/comments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content })
+    });
+    const json = await res.json();
+
+    if (res.ok) {
+      input.value = '';
+      document.getElementById('comment-counter').textContent = '0/1000';
+      // Không thêm bình luận vào danh sách: bình luận chỉ công khai sau khi Admin duyệt.
+      PatuhiApp.showToast(
+        json.message || 'Bình luận của bạn đã được gửi thành công và đang chờ quản trị viên xét duyệt.',
+        'success'
+      );
+    } else {
+      PatuhiApp.showToast(json.message || 'Không thể gửi bình luận.', 'danger');
+    }
+  } catch (e) {
+    PatuhiApp.showToast('Lỗi kết nối khi gửi bình luận.', 'danger');
+  } finally {
+    submitButton.disabled = false;
   }
 }
