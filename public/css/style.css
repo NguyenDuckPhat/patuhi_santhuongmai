@@ -468,6 +468,365 @@ footer.bg-white .text-muted {
   color: #94a3b8 !important;
 }
 
+/* ========================================================
+   HERO BANNER & PROMO CARDS (Modern E-commerce Grade)
+   ======================================================== */
+.hero-banner-section {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* Hero Carousel */
+.hero-carousel {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(255, 102, 0, 0.2);
+  position: relative;
+}
+
+.hero-slide-item {
+  min-height: 320px;
+  padding: 40px 36px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+/* Backgrounds for individual slides */
+.hero-slide-1 {
+  background: linear-gradient(135deg, #ff8800 0%, #ff5500 55%, #e11d48 100%);
+}
+
+.hero-slide-2 {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #ea580c 100%);
+}
+
+.hero-slide-3 {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 55%, #f97316 100%);
+}
+
+/* Floating background circles / blur effects */
+.hero-glow-shape-1 {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  top: -60px;
+  right: 15%;
+  pointer-events: none;
+  animation: heroFloatGlow 8s ease-in-out infinite alternate;
+}
+
+.hero-glow-shape-2 {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+  bottom: -40px;
+  left: 30%;
+  pointer-events: none;
+  animation: heroFloatGlow 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes heroFloatGlow {
+  0% { transform: translateY(0) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-20px) scale(1.15); opacity: 0.9; }
+}
+
+/* Hero Badge */
+.hero-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 6px 16px;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 14px;
+}
+
+/* Hero Titles */
+.hero-title {
+  font-size: 2.15rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  margin-bottom: 12px;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.55;
+  max-width: 520px;
+  margin-bottom: 22px;
+}
+
+/* Hero CTA Buttons */
+.btn-hero-white {
+  background: #ffffff !important;
+  color: #ff5500 !important;
+  font-weight: 700;
+  border-radius: 30px !important;
+  padding: 10px 24px !important;
+  font-size: 0.92rem;
+  border: none !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-hero-white:hover {
+  background: #fff7ed !important;
+  color: #ea580c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.btn-hero-ghost {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 30px !important;
+  padding: 9px 22px !important;
+  font-size: 0.92rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-hero-ghost:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+}
+
+/* Floating Deal Tag on the Right of Slide */
+.hero-floating-card {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  padding: 20px 24px;
+  color: #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  animation: heroCardFloat 5s ease-in-out infinite alternate;
+  text-align: center;
+}
+
+@keyframes heroCardFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}
+
+.hero-floating-icon {
+  width: 60px;
+  height: 60px;
+  background: #ffffff;
+  color: #ff8800;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  margin-bottom: 12px;
+}
+
+/* Carousel Indicators & Controls */
+.hero-carousel .carousel-indicators {
+  margin-bottom: 16px;
+  gap: 6px;
+}
+
+.hero-carousel .carousel-indicators [data-bs-target] {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.hero-carousel .carousel-indicators .active {
+  width: 28px;
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+.hero-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.hero-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
+  color: #ffffff;
+}
+
+/* Side Promo Cards */
+.hero-promo-card {
+  border-radius: 20px;
+  padding: 20px 22px;
+  height: calc(50% - 6px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1.5px solid transparent;
+}
+
+.hero-promo-card:hover {
+  transform: translateY(-4px);
+}
+
+.promo-card-orange {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border-color: #fed7aa;
+}
+
+.promo-card-orange:hover {
+  box-shadow: 0 10px 24px -4px rgba(255, 136, 0, 0.18);
+  border-color: #ff8800;
+}
+
+.promo-card-blue {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #bfdbfe;
+}
+
+.promo-card-blue:hover {
+  box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.18);
+  border-color: #3b82f6;
+}
+
+.promo-badge-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.3px;
+}
+
+.promo-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.hero-promo-card:hover .promo-icon-box {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.promo-icon-orange {
+  background: linear-gradient(135deg, #ff8800 0%, #ff5500 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(255, 102, 0, 0.3);
+}
+
+.promo-icon-blue {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* Trust Bar */
+.hero-trust-bar {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+}
+
+.trust-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .hero-slide-item {
+    min-height: 260px;
+    padding: 28px 22px;
+  }
+  .hero-title {
+    font-size: 1.65rem;
+  }
+  .hero-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 18px;
+  }
+  .hero-floating-card {
+    display: none;
+  }
+  .hero-promo-card {
+    height: auto;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .hero-title {
+    font-size: 1.4rem;
+  }
+  .btn-hero-white,
+  .btn-hero-ghost {
+    padding: 8px 16px !important;
+    font-size: 0.85rem;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Category Grid */
 .category-card {
   transition: transform 0.2s, box-shadow 0.2s;

@@ -36,13 +36,249 @@
     </div>
   </nav>
 
-  <!-- Hero Banner -->
-  <div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #ff8800 0%, #ff5500 100%);">
-    <div class="container text-center py-2">
-      <h2 class="fw-bold mb-2">Mua Bán Dễ Dàng — Trao Đổi Nhanh Chóng</h2>
-      <p class="lead mb-0 text-white-50">Hàng ngàn sản phẩm công nghệ, gia dụng, thời trang và xe cộ đang chờ bạn</p>
+  <!-- Hero Banner Section -->
+  <section class="hero-banner-section py-3 py-lg-4">
+    <div class="container">
+      <div class="row g-3">
+        <!-- Main Hero Carousel (Left 8 cols) -->
+        <div class="col-lg-8">
+          <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="5000">
+            <!-- Indicators -->
+            <div class="carousel-indicators">
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+            </div>
+
+            <!-- Slides -->
+            <div class="carousel-inner">
+              <!-- Slide 1 -->
+              <div class="carousel-item active">
+                <div class="hero-slide-item hero-slide-1">
+                  <div class="hero-glow-shape-1"></div>
+                  <div class="hero-glow-shape-2"></div>
+                  <div class="row align-items-center w-100 g-3 position-relative" style="z-index: 2;">
+                    <div class="col-md-8">
+                      <div class="hero-pill-badge">
+                        <i class="bi bi-fire text-warning"></i> Sàn Đồ Cũ Uy Tín Số 1
+                      </div>
+                      <h1 class="hero-title">
+                        Săn Deal Đồ Cũ <br class="d-none d-sm-inline">Tiết Kiệm Đến 70%
+                      </h1>
+                      <p class="hero-subtitle">
+                        Khám phá hàng ngàn món hời từ đồ công nghệ, gia dụng, thời trang đến xe cộ chính chủ mỗi ngày.
+                      </p>
+                      <div class="d-flex flex-wrap gap-2">
+                        <a href="#section-title" class="btn btn-hero-white">
+                          <i class="bi bi-bag-check-fill me-2"></i>Khám phá ngay
+                        </a>
+                        <a href="/post" class="btn btn-hero-ghost">
+                          <i class="bi bi-plus-circle-fill me-2"></i>Đăng tin bán đồ
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-4 d-none d-md-block text-end">
+                      <div class="hero-floating-card d-inline-block">
+                        <div class="hero-floating-icon">
+                          <i class="bi bi-phone-fill"></i>
+                        </div>
+                        <div class="fw-bold fs-5 text-white">Deal Sốc 99%</div>
+                        <div class="small text-white-50">Giảm đến 70% hôm nay</div>
+                        <span class="badge bg-white text-danger fw-bold mt-2 px-3 py-1 rounded-pill">Tiết Kiệm Lớn</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slide 2 -->
+              <div class="carousel-item">
+                <div class="hero-slide-item hero-slide-2">
+                  <div class="hero-glow-shape-1"></div>
+                  <div class="hero-glow-shape-2"></div>
+                  <div class="row align-items-center w-100 g-3 position-relative" style="z-index: 2;">
+                    <div class="col-md-8">
+                      <div class="hero-pill-badge">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i> Bán Nhanh Trong 24 Giờ
+                      </div>
+                      <h2 class="hero-title">
+                        Thanh Lý Đồ Cũ <br class="d-none d-sm-inline">Thu Tiền Về Liền Tay
+                      </h2>
+                      <p class="hero-subtitle">
+                        Đăng tin miễn phí 100% chỉ trong 30 giây. Tiếp cận hơn 50.000 người mua sắm tích cực trên Patuhi.
+                      </p>
+                      <div class="d-flex flex-wrap gap-2">
+                        <a href="/post" class="btn btn-hero-white">
+                          <i class="bi bi-camera-fill me-2"></i>Đăng tin miễn phí
+                        </a>
+                        <a href="#categories-grid" class="btn btn-hero-ghost">
+                          <i class="bi bi-grid-fill me-2"></i>Xem danh mục
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-4 d-none d-md-block text-end">
+                      <div class="hero-floating-card d-inline-block">
+                        <div class="hero-floating-icon" style="color: #ea580c;">
+                          <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div class="fw-bold fs-5 text-white">Đăng Tin 0đ</div>
+                        <div class="small text-white-50">Duyệt nhanh trong 5 phút</div>
+                        <span class="badge bg-warning text-dark fw-bold mt-2 px-3 py-1 rounded-pill">100% Miễn Phí</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slide 3 -->
+              <div class="carousel-item">
+                <div class="hero-slide-item hero-slide-3">
+                  <div class="hero-glow-shape-1"></div>
+                  <div class="hero-glow-shape-2"></div>
+                  <div class="row align-items-center w-100 g-3 position-relative" style="z-index: 2;">
+                    <div class="col-md-8">
+                      <div class="hero-pill-badge">
+                        <i class="bi bi-shield-fill-check text-warning"></i> Giao Dịch Tin Cậy
+                      </div>
+                      <h2 class="hero-title">
+                        Trò Chuyện Trực Tiếp <br class="d-none d-sm-inline">An Tâm Mua Bán
+                      </h2>
+                      <p class="hero-subtitle">
+                        Tính năng nhắn tin thời gian thực giúp bạn trao đổi giá cả, xem tình trạng hàng hóa trước khi chốt đơn.
+                      </p>
+                      <div class="d-flex flex-wrap gap-2">
+                        <a href="/chat" class="btn btn-hero-white">
+                          <i class="bi bi-chat-dots-fill me-2"></i>Trải nghiệm Chat
+                        </a>
+                        <a href="/favorites" class="btn btn-hero-ghost">
+                          <i class="bi bi-heart-fill me-2"></i>Tin đã lưu
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-4 d-none d-md-block text-end">
+                      <div class="hero-floating-card d-inline-block">
+                        <div class="hero-floating-icon" style="color: #2563eb;">
+                          <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <div class="fw-bold fs-5 text-white">Bảo Vệ Người Mua</div>
+                        <div class="small text-white-50">Báo cáo vi phạm 24/7</div>
+                        <span class="badge bg-white text-primary fw-bold mt-2 px-3 py-1 rounded-pill">An Toàn 100%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" style="width: 5%;">
+              <span class="hero-nav-btn"><i class="bi bi-chevron-left"></i></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" style="width: 5%;">
+              <span class="hero-nav-btn"><i class="bi bi-chevron-right"></i></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2 Side Mini Banners (Right 4 cols) -->
+        <div class="col-lg-4 d-flex flex-column gap-3">
+          <!-- Card 1: Công Nghệ -->
+          <div class="hero-promo-card promo-card-orange">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <span class="promo-badge-tag bg-warning text-dark mb-2">
+                  <i class="bi bi-lightning-fill"></i> HOT DEAL
+                </span>
+                <h5 class="fw-bold text-dark mb-1">Đồ Điện Tử & Công Nghệ</h5>
+                <p class="small text-muted mb-0">Điện thoại, Laptop, Tablet thanh lý chính chủ</p>
+              </div>
+              <div class="promo-icon-box promo-icon-orange">
+                <i class="bi bi-laptop"></i>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-warning border-opacity-25">
+              <span class="small fw-bold text-danger">Giá chỉ từ 500K</span>
+              <a href="#section-title" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm">
+                Xem ngay <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Card 2: Xe Cộ & Gia Dụng -->
+          <div class="hero-promo-card promo-card-blue">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <span class="promo-badge-tag bg-primary text-white mb-2">
+                  <i class="bi bi-star-fill"></i> TIẾT KIỆM
+                </span>
+                <h5 class="fw-bold text-dark mb-1">Xe Cộ & Đồ Gia Dụng</h5>
+                <p class="small text-muted mb-0">Xe máy, nội thất, đồ dùng gia đình giá hời</p>
+              </div>
+              <div class="promo-icon-box promo-icon-blue">
+                <i class="bi bi-bicycle"></i>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-primary border-opacity-25">
+              <span class="small fw-bold text-primary">Xem hàng gần bạn</span>
+              <a href="#section-title" class="btn btn-sm btn-primary text-white fw-bold rounded-pill px-3 shadow-sm">
+                Khám phá <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust Strip Under Banner -->
+      <div class="hero-trust-bar py-3 px-3 px-md-4 mt-3">
+        <div class="row g-2 text-center text-md-start">
+          <div class="col-6 col-md-3">
+            <div class="trust-item justify-content-center justify-content-md-start">
+              <div class="trust-icon-box" style="background: #fff3e6; color: #ff8800;">
+                <i class="bi bi-patch-check-fill"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark small">Kiểm Duyệt An Toàn</div>
+                <div class="text-muted xs-text">100% tin được xác minh</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="trust-item justify-content-center justify-content-md-start">
+              <div class="trust-icon-box" style="background: #eff6ff; color: #2563eb;">
+                <i class="bi bi-chat-heart-fill"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark small">Chat Mua Bán Nhanh</div>
+                <div class="text-muted xs-text">Thương lượng trực tuyến</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="trust-item justify-content-center justify-content-md-start">
+              <div class="trust-icon-box" style="background: #f0fdf4; color: #16a34a;">
+                <i class="bi bi-tag-fill"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark small">Đăng Tin Miễn Phí</div>
+                <div class="text-muted xs-text">Tiếp cận 50K+ người mua</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="trust-item justify-content-center justify-content-md-start">
+              <div class="trust-icon-box" style="background: #faf5ff; color: #9333ea;">
+                <i class="bi bi-shield-lock-fill"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark small">Bảo Mật Thông Tin</div>
+                <div class="text-muted xs-text">Bảo vệ quyền lợi 24/7</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
   <main class="container mb-5">
     <!-- Category Quick Grid -->
