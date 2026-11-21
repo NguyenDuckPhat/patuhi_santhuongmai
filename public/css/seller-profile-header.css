@@ -1,0 +1,89 @@
+#seller-content { display: flex; flex-direction: column; gap: 24px; }
+#seller-content[hidden], .seller-profile-header [hidden] { display: none !important; }
+.seller-profile-header {
+  --seller-profile-font: "Reddit Sans", Helvetica, Arial, Roboto, sans-serif;
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  background-color: #fff;
+  color: #222;
+  font-family: Helvetica, Arial, Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+}
+.seller-profile-header *, .seller-profile-header *::before, .seller-profile-header *::after { box-sizing: border-box; }
+.seller-profile-header h1, .seller-profile-header p { margin: 0; }
+.seller-profile-header img { overflow: clip; object-fit: cover; vertical-align: middle; }
+.seller-profile-header svg { display: block; flex-shrink: 0; overflow: hidden; vertical-align: middle; }
+.seller-profile-header p { height: 24px; }
+.seller-profile-menu { position: relative; flex: 0 0 32px; width: 32px; height: 32px; }
+.seller-profile-menu-button {
+  display: flex;
+  position: relative;
+  align-items: center;
+  width: 100%;
+  height: 32px;
+  padding: 5px;
+  border: 1px solid #f4f4f4;
+  border-radius: 9999px;
+  background-color: #f4f4f4;
+  color: #222;
+  font-family: var(--seller-profile-font);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+.seller-profile-body { display: flex; flex-direction: column; gap: 20px; width: 100%; height: 200px; padding: 20px; border-radius: 12px; background-color: #fff; }
+.seller-profile-overview { display: flex; justify-content: space-between; gap: 20px; width: 100%; height: 160px; }
+.seller-profile-identity { display: flex; gap: 20px; width: 100%; max-width: 671.55px; height: 160px; }
+.seller-profile-avatar { display: grid; place-items: center; position: relative; flex: 0 0 140px; width: 140px; height: 140px; border: 1px solid #fff; border-radius: 9999px; }
+.seller-profile-avatar img { width: 138px; height: 138px; border-radius: 9999px; }
+.seller-profile-avatar span { font-family: var(--seller-profile-font); font-size: 24px; font-weight: 700; }
+.seller-profile-details { display: flex; flex-direction: column; flex: 0 0 511.55px; gap: 12px; width: 100%; max-width: 511.55px; height: 160px; }
+.seller-profile-name-row { display: flex; align-items: center; gap: 16px; width: 100%; height: 32px; }
+.seller-profile-name-row h1 { max-width: 700px; height: 32px; overflow: hidden; font-family: var(--seller-profile-font); font-size: 24px; font-weight: 700; line-height: 32px; text-overflow: ellipsis; white-space: nowrap; }
+.seller-profile-meta { display: flex; align-items: center; gap: 16px; width: 100%; height: 24px; color: #595959; font-family: var(--seller-profile-font); font-size: 16px; line-height: 24px; }
+.seller-profile-activity { display: flex; align-items: center; gap: 4px; flex-shrink: 0; height: 24px; }
+.seller-profile-activity p { white-space: nowrap; }
+.seller-profile-status-dot { flex: 0 0 12px; width: 12px; height: 12px; border-radius: 50%; background-color: #8c8c8c; }
+.seller-profile-activity.is-online .seller-profile-status-dot { background-color: #198754; }
+.seller-profile-activity.is-online p { color: #198754; }
+.seller-profile-separator { display: block; flex: 0 0 5.63px; width: 5.63px; height: 24px; }
+.seller-profile-response { flex-shrink: 0; max-width: 138.22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seller-profile-followers { flex-shrink: 0; max-width: 124.33px; height: 24px; white-space: nowrap; }
+#seller-followers { text-decoration: underline; }
+.seller-profile-reputation { display: flex; align-items: center; gap: 16px; width: 100%; height: 28px; color: #595959; font-family: var(--seller-profile-font); font-size: 16px; line-height: 24px; }
+.seller-profile-rating { display: flex; align-items: center; gap: 4px; height: 28px; }
+.seller-profile-rating-value { display: block; min-width: 25.02px; height: 28px; color: #222; font-size: 20px; font-weight: 700; line-height: 28px; }
+.seller-profile-star { width: 20px; height: 20px; color: #ffba00; }
+.seller-profile-rating-count { display: block; height: 24px; white-space: nowrap; text-decoration: underline; }
+.seller-profile-membership { display: flex; align-items: center; gap: 4px; height: 24px; white-space: nowrap; }
+.seller-profile-membership svg, .seller-profile-location svg { width: 24px; height: 24px; color: #222; }
+.seller-profile-membership > span { display: block; max-width: 195.95px; height: 24px; }
+.seller-profile-actions { display: flex; align-items: center; gap: 16px; width: 100%; height: 40px; }
+.seller-profile-location { display: flex; align-items: center; gap: 4px; flex-shrink: 0; width: 229.45px; height: 24px; color: #595959; font-family: var(--seller-profile-font); font-size: 16px; line-height: 24px; }
+.seller-profile-location > span { display: block; max-width: 201.45px; height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seller-profile-action {
+  display: flex;
+  position: relative;
+  align-items: center;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #dadada;
+  border-radius: 9999px;
+  background-color: #fff;
+  color: #222;
+  font-family: var(--seller-profile-font);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  text-align: center;
+}
+.seller-profile-action svg { width: 24px; height: 24px; margin: -4px 6px -4px -4px; font-size: 24px; }
+.seller-profile-action span { display: block; height: 24px; white-space: nowrap; }
+#seller-share { min-width: 112.47px; }
+#seller-follow { min-width: 123.66px; }
+#seller-follow[aria-pressed="true"] { border-color: #198754; background-color: #198754; color: #fff; }
+#seller-follow[aria-pressed="true"]:hover { border-color: #146c43; background-color: #146c43; }
