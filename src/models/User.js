@@ -58,6 +58,10 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
         defaultValue: '/uploads/avatars/default.png'
       },
+      last_active_at: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       role: {
         type: DataTypes.ENUM('guest', 'member', 'admin'),
         defaultValue: 'member'

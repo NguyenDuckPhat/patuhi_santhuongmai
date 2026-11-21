@@ -11,6 +11,11 @@ const initModels = (sequelizeInstance) => {
   const Conversation = require('./Conversation')(sequelize);
   const Message = require('./Message')(sequelize);
   const Report = require('./Report')(sequelize);
+<<<<<<< Updated upstream
+=======
+  const Comment = require('./Comment')(sequelize);
+  const SellerFollow = require('./SellerFollow')(sequelize);
+>>>>>>> Stashed changes
 
   // Quan hệ User - Product
   User.hasMany(Product, { foreignKey: 'user_id', as: 'products', onDelete: 'CASCADE' });
@@ -63,7 +68,13 @@ const initModels = (sequelizeInstance) => {
     Favorite,
     Conversation,
     Message,
+<<<<<<< Updated upstream
     Report
+=======
+    Report,
+    Comment,
+    SellerFollow
+>>>>>>> Stashed changes
   };
 };
 

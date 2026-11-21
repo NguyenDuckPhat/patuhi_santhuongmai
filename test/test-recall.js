@@ -32,11 +32,13 @@ const request = async (method, urlPath, body = null, token = null, isForm = fals
   const initModels = require('../src/models');
   const seedData = require('../src/utils/seedData');
   const ensureProductMetadataColumns = require('../src/utils/ensureProductMetadataColumns');
+  const ensureSellerColumns = require('../src/utils/ensureSellerColumns');
 
   const sequelize = await testAndConnectDB();
   const models = initModels(sequelize);
   await sequelize.sync({ force: false });
   await ensureProductMetadataColumns(sequelize);
+  await ensureSellerColumns(sequelize);
   await seedData();
 
   server = http.createServer(app);

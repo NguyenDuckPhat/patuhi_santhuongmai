@@ -26,6 +26,11 @@ module.exports = (sequelize) => {
           len: [1, 1000]
         }
       },
+      rating: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: { isInt: true, min: 1, max: 5 }
+      },
       status: {
         type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED'),
         allowNull: false,

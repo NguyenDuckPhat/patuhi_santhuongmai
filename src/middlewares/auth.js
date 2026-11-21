@@ -12,6 +12,16 @@ const getUserModel = () => {
   return User;
 };
 
+const trackActivity = async (user) => {
+  const now = new Date();
+  if (user.last_active_at && now - user.last_active_at < 5 * 60 * 1000) return;
+  try {
+    await user.update({ last_active_at: now }, { silent: true });
+  } catch (error) {
+    console.error('Lỗi lưu hoạt động tài khoản:', error.message);
+  }
+};
+
 // Middleware xác thực JWT (từ Bearer header hoặc Cookie)
 const authenticate = async (req, res, next) => {
   try {
@@ -50,6 +60,7 @@ const authenticate = async (req, res, next) => {
     }
 
     req.user = user;
+    await trackActivity(user);
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -88,6 +99,7 @@ const optionalAuth = async (req, res, next) => {
 
     if (user && user.status !== 'locked') {
       req.user = user;
+      await trackActivity(user);
     } else {
       req.user = null;
     }

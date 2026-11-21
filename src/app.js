@@ -29,7 +29,7 @@ app.use('/api', apiRoutes);
 // Phục vụ các trang HTML giao diện người dùng
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(publicDir, 'register.html')));
-app.get('/profile', (req, res) => res.sendFile(path.join(publicDir, 'profile.html')));
+app.get('/profile', (req, res) => res.sendFile(path.join(publicDir, req.query.profile !== undefined ? 'seller-profile.html' : 'profile.html')));
 app.get('/post', (req, res) => res.sendFile(path.join(publicDir, 'post.html')));
 app.get('/product/:id', (req, res) => res.sendFile(path.join(publicDir, 'product-detail.html')));
 app.get('/favorites', (req, res) => res.sendFile(path.join(publicDir, 'favorites.html')));

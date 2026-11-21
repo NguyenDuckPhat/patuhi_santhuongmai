@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(100) NOT NULL,
   `phone` VARCHAR(20) NULL,
   `avatar` VARCHAR(255) DEFAULT '/uploads/avatars/default.png',
+  `last_active_at` DATETIME NULL,
   `role` ENUM('guest', 'member', 'admin') DEFAULT 'member',
   `status` ENUM('active', 'locked') DEFAULT 'active',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -121,3 +122,29 @@ CREATE TABLE IF NOT EXISTS `reports` (
   FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+<<<<<<< Updated upstream
+=======
+
+-- 9. BẢNG BÌNH LUẬN SẢN PHẨM (comments)
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `product_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `content` TEXT NOT NULL,
+  `rating` INT NULL,
+  `status` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_comments_product_status` (`product_id`, `status`),
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `seller_follows` (
+  `seller_id` INT NOT NULL,
+  `follower_id` INT NOT NULL,
+  PRIMARY KEY (`seller_id`, `follower_id`),
+  FOREIGN KEY (`seller_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`follower_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+>>>>>>> Stashed changes

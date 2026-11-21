@@ -71,7 +71,7 @@ const createComment = async (req, res) => {
     }
 
     const { Comment, Product } = getModels();
-    const product = await Product.findByPk(productId, { attributes: ['id', 'status'] });
+    const product = await Product.findByPk(productId, { attributes: ['id', 'status', 'user_id'] });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm này.' });
     }
@@ -90,10 +90,23 @@ const createComment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nội dung bình luận tối đa 1000 ký tự.' });
     }
 
+    const inputRating = req.body?.rating;
+    let rating = null;
+    if (inputRating != null) {
+      if (!Number.isInteger(inputRating) || inputRating < 1 || inputRating > 5) {
+        return res.status(400).json({ success: false, message: 'Điểm đánh giá phải từ 1 đến 5 sao.' });
+      }
+      if (req.user.id === product.user_id) {
+        return res.status(403).json({ success: false, message: 'Bạn không thể tự đánh giá tin đăng của mình.' });
+      }
+      rating = inputRating;
+    }
+
     const comment = await Comment.create({
       product_id: productId,
       user_id: req.user.id,
       content,
+      rating,
       status: 'PENDING'
     });
 

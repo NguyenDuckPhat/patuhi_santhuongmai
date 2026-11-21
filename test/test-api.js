@@ -5,12 +5,17 @@
  */
 
 const http = require('http');
+const { Script } = require('node:vm');
 const app = require('../src/app');
 const { testAndConnectDB } = require('../src/config/database');
 const initModels = require('../src/models');
 const seedData = require('../src/utils/seedData');
 const ensureProductMetadataColumns = require('../src/utils/ensureProductMetadataColumns');
+<<<<<<< Updated upstream
 const ensureUserMetadataColumns = require('../src/utils/ensureUserMetadataColumns');
+=======
+const ensureSellerColumns = require('../src/utils/ensureSellerColumns');
+>>>>>>> Stashed changes
 
 let server;
 let baseUrl;
@@ -60,7 +65,11 @@ const runTests = async () => {
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
     await ensureProductMetadataColumns(sequelize);
+<<<<<<< Updated upstream
     await ensureUserMetadataColumns(sequelize);
+=======
+    await ensureSellerColumns(sequelize);
+>>>>>>> Stashed changes
 
     // Remove orphan categories left behind by older runs of this API test.
     const categoriesBeforeSeed = await models.Category.findAll({ attributes: ['id', 'name'] });
@@ -90,6 +99,15 @@ const runTests = async () => {
     console.log('📌 NHÓM 1: KHỞI TẠO & KIỂM TRA HỆ THỐNG');
     const health = await request('GET', '/api/health');
     assert(health.status === 200 && health.data.status === 'online', '1. Khởi tạo Express & Route Healthcheck');
+    const chatScript = await request('GET', '/js/chat.js');
+    let chatScriptLoads = false;
+    try {
+      new Script(chatScript.data, { filename: 'chat.js' });
+      chatScriptLoads = chatScript.status === 200;
+    } catch (error) {
+      console.error('Lỗi JavaScript trang chat:', error.message);
+    }
+    assert(chatScriptLoads, 'Trang chat phục vụ JavaScript hợp lệ, trình duyệt có thể khởi tạo');
 
     // ----------------------------------------------------
     // TEST 2: Đăng ký tài khoản (Requirement 5)
@@ -240,6 +258,46 @@ const runTests = async () => {
     console.log('\n📌 NHÓM 5: DANH SÁCH YÊU THÍCH (WISHLIST)');
     // Lấy một sản phẩm khác để thêm yêu thích
     const otherProduct = productsRes.data.data.products[0];
+    const sellerUrl = `/api/users/${otherProduct.user_id}/seller`;
+    const memberListings = await request('GET', `/api/users/${memberUser.id}/seller/listings?status=sold`);
+    assert(memberListings.status === 200 && memberListings.data.data.products.some(product => product.id === createdProductId), 'Hồ sơ người bán liệt kê tin đã bán');
+    const referenceImage = 'https://cdn.chotot.com/3gGAEamk2x0cUbmKm0xm2AOazKxr3vbmjbsGQ_PAScs/preset:listing/plain/2dc1834dd905174819fe52926cf38285-3011174944793899487.jpg';
+    await models.ProductImage.bulkCreate([
+      { product_id: createdProductId, image_url: '/uploads/products/secondary-test.jpg', is_primary: false },
+      { product_id: createdProductId, image_url: referenceImage, is_primary: true }
+    ]);
+    const listingsWithImages = await request('GET', `/api/users/${memberUser.id}/seller/listings?status=sold`);
+    const picturedProduct = listingsWithImages.data.data.products.find(product => product.id === createdProductId);
+    assert(
+      picturedProduct.images.length === 2 && picturedProduct.images[0].image_url === referenceImage &&
+      picturedProduct.location && !Number.isNaN(new Date(picturedProduct.createdAt).getTime()) &&
+      listingsWithImages.data.data.totalPages === memberListings.data.data.totalPages,
+      'Tin đăng người bán trả đầy đủ ảnh, ảnh bìa đứng trước, khu vực và ngày đăng; nhiều ảnh không làm sai phân trang'
+    );
+    const memberSeller = await request('GET', `/api/users/${memberUser.id}/seller`);
+    assert(memberSeller.status === 200 && memberSeller.data.data.last_active_at && memberSeller.data.data.listings.sold === 1, 'Hồ sơ hiển thị hoạt động gần nhất và đếm tin đã bán');
+
+    const guestSeller = await request('GET', sellerUrl);
+    const publicProfilePage = await request('GET', `/profile?profile=${otherProduct.user_id}`);
+    const ownProfilePage = await request('GET', '/profile');
+    assert(
+      publicProfilePage.status === 200 && publicProfilePage.data.includes('/js/seller-profile.js') &&
+      ownProfilePage.status === 200 && ownProfilePage.data.includes('/js/profile.js') &&
+      guestSeller.data.data.seller.id === otherProduct.user_id && guestSeller.data.data.seller.full_name &&
+      !('email' in guestSeller.data.data.seller) && !('password' in guestSeller.data.data.seller),
+      'Khách mở hồ sơ người bán theo query profile và nhận thông tin công khai'
+    );
+    const followUrl = `/api/users/${otherProduct.user_id}/follow`;
+    const followRes = await request('PUT', followUrl, null, memberToken);
+    await request('PUT', followUrl, null, memberToken);
+    const followedSeller = await request('GET', sellerUrl, null, memberToken);
+    const unfollowRes = await request('DELETE', followUrl, null, memberToken);
+    assert(
+      guestSeller.status === 200 && followRes.status === 200 && followedSeller.data.data.is_following &&
+      followedSeller.data.data.followers === guestSeller.data.data.followers + 1 &&
+      unfollowRes.data.data.followers === guestSeller.data.data.followers && !unfollowRes.data.data.is_following,
+      'Theo dõi được lưu, không tính trùng và có thể hủy theo dõi'
+    );
     const addFavRes = await request('POST', `/api/favorites/${otherProduct.id}`, null, memberToken);
     assert(addFavRes.status === 201 && addFavRes.data.success, '18. Thêm sản phẩm vào danh sách yêu thích');
 
@@ -274,6 +332,18 @@ const runTests = async () => {
     assert(getMsgsRes.status === 200 && readMessage?.is_read === true, '23. Mở hội thoại cập nhật tin nhắn thành đã xem');
     const readStatusRes = await request('GET', `/api/chat/conversations/${convId}/read-status`, null, memberToken);
     assert(readStatusRes.status === 200 && readStatusRes.data.data.readMessageIds.includes(sentMessage.id), '23a. Đồng bộ trạng thái đã xem không tải lại trang');
+    const messageToRecall = await request('POST', `/api/chat/conversations/${convId}/messages`, {
+      content: 'Tin nhắn dùng để kiểm tra thu hồi'
+    }, memberToken);
+    const recalledMessageId = messageToRecall.data.data.message.id;
+    const recallRes = await request('PATCH', `/api/chat/conversations/${convId}/messages/${recalledMessageId}/recall`, null, memberToken);
+    const messagesAfterRecall = await request('GET', `/api/chat/conversations/${convId}/messages`, null, memberToken);
+    assert(
+      recallRes.status === 200 && recallRes.data.data.message.is_recalled === true &&
+      messagesAfterRecall.data.data.messages.some(message => message.id === recalledMessageId &&
+        message.is_recalled && message.content === 'Tin nhắn đã được thu hồi'),
+      '23b. Thu hồi tin nhắn qua đúng API của giao diện và lưu trạng thái khi tải lại'
+    );
 
     // ----------------------------------------------------
     // TEST 10: Báo cáo vi phạm (Requirements 24, 25)
@@ -349,6 +419,213 @@ const runTests = async () => {
     }, adminToken);
     assert(processReportRes.status === 200 && processReportRes.data.data.report.status === 'resolved', '33. Xử lý báo cáo vi phạm (Admin)');
 
+<<<<<<< Updated upstream
+=======
+    // ----------------------------------------------------
+    // TEST 9: BÌNH LUẬN SẢN PHẨM (Gửi -> PENDING -> Admin duyệt/từ chối)
+    // ----------------------------------------------------
+    console.log('\n📌 NHÓM 9: BÌNH LUẬN SẢN PHẨM');
+    const commentProductId = otherProduct.id;
+
+    const initialCommentsRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      initialCommentsRes.status === 200 && Array.isArray(initialCommentsRes.data.data.comments),
+      '35. Xem danh sách bình luận công khai của sản phẩm'
+    );
+
+    const guestCommentRes = await request('POST', `/api/products/${commentProductId}/comments`, {
+      content: 'Khách chưa đăng nhập không được bình luận'
+    });
+    assert(guestCommentRes.status === 401, '36. Chặn người chưa đăng nhập gửi bình luận');
+
+    const emptyCommentRes = await request('POST', `/api/products/${commentProductId}/comments`, {
+      content: '   '
+    }, memberToken);
+    assert(emptyCommentRes.status === 400, '37. Từ chối nội dung bình luận trống');
+
+    const forgedRes = await request('POST', `/api/products/${commentProductId}/comments`, {
+      content: 'Bình luận gửi kèm dữ liệu giả mạo',
+      status: 'APPROVED',
+      user_id: memberUser.id + 999,
+      product_id: createdProductId
+    }, memberToken);
+    const forgedComment = forgedRes.status === 201
+      ? await models.Comment.findByPk(forgedRes.data.data.comment.id)
+      : null;
+    assert(
+      forgedComment && forgedComment.status === 'PENDING' &&
+      forgedComment.user_id === memberUser.id && forgedComment.product_id === commentProductId,
+      '38. Bỏ qua status/user_id/product_id giả mạo từ trình duyệt'
+    );
+
+    const xssCommentRes = await request('POST', `/api/products/${commentProductId}/comments`, {
+      content: '<img src=x onerror=alert(1)> Sản phẩm rất tốt!',
+      rating: 4
+    }, memberToken);
+    const newCommentId = xssCommentRes.status === 201 ? xssCommentRes.data.data.comment.id : null;
+    const createdComment = newCommentId ? await models.Comment.findByPk(newCommentId) : null;
+    assert(
+      xssCommentRes.status === 201 && createdComment && createdComment.status === 'PENDING' &&
+      !createdComment.content.includes('<img'),
+      '39. Gửi bình luận ở trạng thái PENDING và làm sạch thẻ HTML'
+    );
+
+    const hiddenBeforeRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    const sellerBeforeApproval = await request('GET', sellerUrl);
+    assert(
+      hiddenBeforeRes.status === 200 && !hiddenBeforeRes.data.data.comments.some(c => c.id === newCommentId),
+      '40. Ẩn bình luận PENDING khỏi danh sách công khai'
+    );
+
+    const otherProductCommentsRes = await request('GET', `/api/products/${createdProductId}/comments`);
+    assert(
+      otherProductCommentsRes.status === 200 && !otherProductCommentsRes.data.data.comments.some(c => c.id === newCommentId),
+      '41. Bình luận không xuất hiện ở sản phẩm khác'
+    );
+
+    const adminCommentsRes = await request('GET', '/api/admin/comments?status=PENDING', null, adminToken);
+    assert(
+      adminCommentsRes.status === 200 && adminCommentsRes.data.data.comments.some(c => c.id === newCommentId),
+      '42. Admin xem danh sách bình luận chờ duyệt'
+    );
+
+    const approveCommentRes = await request('PATCH', `/api/admin/comments/${newCommentId}/review`, {
+      action: 'approve'
+    }, adminToken);
+    assert(
+      approveCommentRes.status === 200 && approveCommentRes.data.data.comment.status === 'APPROVED',
+      '43. Admin duyệt bình luận'
+    );
+
+    const visibleAfterRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      visibleAfterRes.status === 200 && visibleAfterRes.data.data.comments.some(c => c.id === newCommentId),
+      '44. Bình luận đã duyệt xuất hiện đúng sản phẩm'
+    );
+    const sellerAfterApproval = await request('GET', sellerUrl);
+    assert(
+      visibleAfterRes.data.data.comments.some(c => c.id === newCommentId && c.rating === 4) &&
+      sellerAfterApproval.data.data.rating_count === sellerBeforeApproval.data.data.rating_count + 1,
+      'Điểm đánh giá chỉ được tính sau khi bình luận được duyệt'
+    );
+
+    const stillNotOnOtherRes = await request('GET', `/api/products/${createdProductId}/comments`);
+    assert(
+      stillNotOnOtherRes.status === 200 && !stillNotOnOtherRes.data.data.comments.some(c => c.id === newCommentId),
+      '45. Bình luận đã duyệt vẫn không xuất hiện ở sản phẩm khác'
+    );
+
+    const rejectCommentRes = await request('PATCH', `/api/admin/comments/${newCommentId}/review`, {
+      action: 'reject'
+    }, adminToken);
+    assert(
+      rejectCommentRes.status === 200 && rejectCommentRes.data.data.comment.status === 'REJECTED',
+      '46. Admin từ chối bình luận'
+    );
+
+    const hiddenAfterRejectRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      hiddenAfterRejectRes.status === 200 && !hiddenAfterRejectRes.data.data.comments.some(c => c.id === newCommentId),
+      '47. Bình luận bị từ chối không còn hiển thị công khai'
+    );
+
+    const noPublicStatusRes = await request('PATCH', `/api/products/${commentProductId}/comments/${newCommentId}/review`, {
+      status: 'APPROVED'
+    }, memberToken);
+    assert(noPublicStatusRes.status === 404, '48. Không có API public cho phép đổi trạng thái bình luận');
+
+    // ----------------------------------------------------
+    // TEST 10: QUẢN LÝ BÌNH LUẬN NÂNG CAO (Admin)
+    // ----------------------------------------------------
+    console.log('\n📌 NHÓM 10: QUẢN LÝ BÌNH LUẬN NÂNG CAO (Admin)');
+
+    const commentStatsRes = await request('GET', '/api/admin/dashboard/stats', null, adminToken);
+    const commentStats = commentStatsRes.data.data.comments;
+    assert(
+      commentStatsRes.status === 200 &&
+      ['total', 'pending', 'approved', 'rejected'].every(k => typeof commentStats[k] === 'number') &&
+      commentStats.total === commentStats.pending + commentStats.approved + commentStats.rejected,
+      '49. Thống kê đủ tổng/chờ duyệt/đã duyệt/từ chối bình luận'
+    );
+
+    const searchByProductRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(otherProduct.title)}`, null, adminToken);
+    assert(
+      searchByProductRes.status === 200 && searchByProductRes.data.data.comments.some(c => c.id === newCommentId),
+      '50. Tìm kiếm bình luận theo tên sản phẩm'
+    );
+
+    const searchByUsernameRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(memberUser.username)}`, null, adminToken);
+    assert(
+      searchByUsernameRes.status === 200 && searchByUsernameRes.data.data.comments.some(c => c.id === newCommentId),
+      '51. Tìm kiếm bình luận theo tên đăng nhập người dùng'
+    );
+
+    const searchByFullNameRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(updateProfileRes.data.data.user.full_name)}`, null, adminToken);
+    assert(
+      searchByFullNameRes.status === 200 && searchByFullNameRes.data.data.comments.some(c => c.id === newCommentId),
+      '52. Tìm kiếm bình luận theo họ tên người dùng'
+    );
+
+    const searchByContentRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent('dữ liệu giả mạo')}`, null, adminToken);
+    assert(
+      searchByContentRes.status === 200 && searchByContentRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '53. Tìm kiếm bình luận theo nội dung'
+    );
+
+    const searchNoResultRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent('chuỗi-khong-ton-tai-xyz-999')}`, null, adminToken);
+    assert(
+      searchNoResultRes.status === 200 && searchNoResultRes.data.data.comments.length === 0,
+      '54. Tìm kiếm không trùng trả về danh sách rỗng'
+    );
+
+    const commentWithImageRes = await request('GET', `/api/admin/comments?status=all&q=${encodeURIComponent(otherProduct.title)}`, null, adminToken);
+    assert(
+      commentWithImageRes.status === 200 &&
+      Array.isArray(commentWithImageRes.data.data.comments[0].product.images),
+      '55. API Admin trả về hình ảnh sản phẩm để hiển thị cột ảnh'
+    );
+
+    const memberAdminListRes = await request('GET', '/api/admin/comments?status=all', null, memberToken);
+    assert(memberAdminListRes.status === 403, '56. Thành viên không được gọi API danh sách bình luận Admin');
+
+    const memberDeleteRes = await request('DELETE', `/api/admin/comments/${forgedComment.id}`, null, memberToken);
+    assert(memberDeleteRes.status === 403, '57. Thành viên không được xóa bình luận');
+
+    const invalidActionRes = await request('PATCH', `/api/admin/comments/${newCommentId}/review`, {
+      action: 'unknown'
+    }, adminToken);
+    assert(invalidActionRes.status === 400, '58. Từ chối action duyệt không hợp lệ');
+
+    const approveForgedRes = await request('PATCH', `/api/admin/comments/${forgedComment.id}/review`, {
+      action: 'approve'
+    }, adminToken);
+    assert(approveForgedRes.status === 200, '59. Admin duyệt bình luận trước khi xóa');
+
+    const publicBeforeDeleteRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      publicBeforeDeleteRes.status === 200 && publicBeforeDeleteRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '60. Bình luận đã duyệt hiển thị công khai trước khi xóa'
+    );
+
+    const deleteCommentRes = await request('DELETE', `/api/admin/comments/${forgedComment.id}`, null, adminToken);
+    assert(deleteCommentRes.status === 200, '61. Admin xóa bình luận thành công');
+
+    const deletedCommentRes = await models.Comment.findByPk(forgedComment.id);
+    assert(deletedCommentRes === null, '62. Bản ghi bình luận đã bị xóa khỏi database');
+
+    const publicAfterDeleteRes = await request('GET', `/api/products/${commentProductId}/comments`);
+    assert(
+      publicAfterDeleteRes.status === 200 && !publicAfterDeleteRes.data.data.comments.some(c => c.id === forgedComment.id),
+      '63. Bình luận sau khi xóa biến mất khỏi trang công khai'
+    );
+
+    // Dọn dẹp dữ liệu bình luận của riêng kịch bản test
+    const testCommentIds = [forgedRes.data.data.comment.id, newCommentId].filter(Boolean);
+    if (testCommentIds.length > 0) {
+      await models.Comment.destroy({ where: { id: testCommentIds } });
+    }
+
+>>>>>>> Stashed changes
     // Xóa tin đăng (Requirement 16)
     const deleteProdRes = await request('DELETE', `/api/products/${createdProductId}`, null, adminToken);
     assert(deleteProdRes.status === 200 && deleteProdRes.data.success, '34. Xóa tin đăng bán sản phẩm');

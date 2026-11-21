@@ -167,7 +167,7 @@ const getProductById = async (req, res) => {
         {
           model: User,
           as: 'seller',
-          attributes: ['id', 'username', 'full_name', 'avatar', 'phone', 'created_at']
+          attributes: ['id', 'username', 'full_name', 'avatar', 'phone', 'createdAt']
         }
       ]
     });

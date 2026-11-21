@@ -8,6 +8,7 @@ let chatSoundReady = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateChatSoundButton();
+  setupRecallButtonHandler();
   const enableSoundAfterGesture = () => {
     unlockChatSound();
     document.removeEventListener('pointerdown', enableSoundAfterGesture);
@@ -30,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Khởi tạo Socket.io
   if (typeof io !== 'undefined') {
     socket = io();
+    socket.on('connect', () => {
+      if (activeConversationId) socket.emit('join_conversation', activeConversationId);
+    });
     socket.on('receive_message', (msg) => {
       if (Number(msg.sender_id) !== Number(myUser.id)) playIncomingMessageSound();
       if (Number(msg.conversation_id) === Number(activeConversationId)) {
@@ -205,6 +209,10 @@ async function selectConversation(conversationId) {
 
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '<div class="text-center py-5 text-muted">Đang tải tin nhắn...</div>';
+  document.getElementById('message-input').disabled = true;
+  document.getElementById('btn-send-msg').disabled = true;
+  document.getElementById('btn-attach-image').disabled = true;
+  cancelImagePreview();
 
   try {
     const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
@@ -213,6 +221,7 @@ async function selectConversation(conversationId) {
       }
     });
     const json = await res.json();
+    if (Number(conversationId) !== Number(activeConversationId)) return;
     if (!res.ok) {
       messagesContainer.innerHTML = `<div class="p-3 text-danger">${json.message}</div>`;
       return;
@@ -257,13 +266,64 @@ async function selectConversation(conversationId) {
     refreshReadStatus(conversationId);
     readStatusSyncTimer = setInterval(() => refreshReadStatus(conversationId), 2000);
   } catch (err) {
+    if (Number(conversationId) !== Number(activeConversationId)) return;
     messagesContainer.innerHTML = '<div class="p-3 text-danger">Lỗi kết nối tải tin nhắn.</div>';
   }
 }
 
+<<<<<<< Updated upstream
 function appendMessage(message) {
   const container = document.getElementById('messages-container');
   const isMine = message.sender_id === myUser.id;
+=======
+let selectedChatImage = null;
+
+function handleImageSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    PatuhiApp.showToast('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WebP...)!', 'warning');
+    event.target.value = '';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    PatuhiApp.showToast('Kích thước ảnh tối đa là 5MB!', 'warning');
+    event.target.value = '';
+    return;
+  }
+
+  selectedChatImage = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('image-preview').src = e.target.result;
+    document.getElementById('image-preview-name').textContent = file.name;
+    const previewContainer = document.getElementById('image-preview-container');
+    previewContainer.classList.remove('d-none');
+    previewContainer.classList.add('d-flex');
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelImagePreview() {
+  selectedChatImage = null;
+  const input = document.getElementById('chat-image-input');
+  if (input) input.value = '';
+  const previewContainer = document.getElementById('image-preview-container');
+  if (previewContainer) {
+    previewContainer.classList.add('d-none');
+    previewContainer.classList.remove('d-flex');
+  }
+  const previewImg = document.getElementById('image-preview');
+  if (previewImg) previewImg.src = '';
+  const previewName = document.getElementById('image-preview-name');
+  if (previewName) previewName.textContent = '';
+}
+
+function createMessageElement(message) {
+  const isMine = Number(message.sender_id) === Number(myUser.id);
+>>>>>>> Stashed changes
   const messageId = Number(message.id);
   if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
 
@@ -274,6 +334,7 @@ function appendMessage(message) {
     : 'Vừa xong';
   const isRead = message.is_read === true || message.is_read === 1;
 
+<<<<<<< Updated upstream
   const div = document.createElement('div');
   div.className = `msg-bubble ${isMine ? 'sent' : 'received'}`;
   if (Number.isFinite(messageId)) div.id = `message-${messageId}`;
@@ -286,6 +347,158 @@ function appendMessage(message) {
   `;
   container.appendChild(div);
   scrollToBottom();
+=======
+  const imageHtml = message.image_url && !message.is_recalled ? `
+    <div class="message-image mb-2">
+      <a href="${message.image_url}" target="_blank" rel="noopener noreferrer">
+        <img src="${message.image_url}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
+      </a>
+    </div>
+  ` : '';
+  const contentHtml = `<div class="message-content">${escapeHtml(message.content || '')}</div>`;
+
+  const bubble = document.createElement('div');
+  bubble.className = `msg-bubble ${isMine ? 'sent' : 'received'}${message.is_recalled ? ' recalled' : ''}`;
+  bubble.id = `message-${messageId}`;
+  bubble.innerHTML = `
+    ${imageHtml}
+    ${contentHtml}
+    <div class="msg-meta d-flex align-items-center text-muted small mt-1">
+      <span class="msg-time me-2">${timeLabel}</span>
+      ${isMine ? `<span class="message-read-status" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
+    </div>
+  `;
+
+  // Thêm nút Thu hồi nếu là tin của mình và chưa được thu hồi
+  if (isMine && !message.is_recalled) {
+    const recallBtn = document.createElement('button');
+    recallBtn.className = 'btn btn-sm btn-link text-decoration-none recall-btn';
+    recallBtn.dataset.messageId = messageId;
+    recallBtn.textContent = 'Thu hồi';
+    recallBtn.title = 'Thu hồi tin nhắn này';
+    recallBtn.style.marginLeft = '8px';
+    bubble.appendChild(recallBtn);
+  }
+
+  return bubble;
+}
+
+// Xử lý click vào nút Thu hồi (delegated)
+function setupRecallButtonHandler() {
+  document.addEventListener('click', async (e) => {
+    const target = e.target;
+    if (target && target.matches('.recall-btn')) {
+      const messageId = target.dataset.messageId;
+      const conversationId = activeConversationId;
+      if (!messageId) return;
+      if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
+      try {
+        const res = await fetch(`/api/chat/conversations/${conversationId}/messages/${messageId}/recall`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+        });
+        const json = await res.json();
+        if (res.ok) {
+          // UI sẽ được cập nhật qua socket 'message_recalled' hoặc ngay tại đây
+          if (Number(conversationId) === Number(activeConversationId)) {
+            applyMessageRecalled(messageId, json.data.message.content);
+          }
+        } else {
+          PatuhiApp.showToast(json.message || 'Không thể thu hồi tin nhắn.', 'danger');
+        }
+      } catch (err) {
+        PatuhiApp.showToast('Lỗi khi thu hồi tin nhắn.', 'danger');
+      }
+    }
+  });
+}
+
+// Cập nhật giao diện khi nhận socket event hoặc khi recall thành công
+function applyMessageRecalled(messageId, newContent) {
+  const msgElem = document.getElementById(`message-${messageId}`);
+  if (!msgElem) return;
+  // Đánh dấu đã thu hồi
+  msgElem.classList.add('recalled');
+  // Xóa nút recall nếu còn
+  const recallBtn = msgElem.querySelector('.recall-btn');
+  if (recallBtn) recallBtn.remove();
+  // Xóa ảnh nếu có
+  const imgDiv = msgElem.querySelector('.message-image');
+  if (imgDiv) imgDiv.remove();
+  // Chỉ thay nội dung, giữ nguyên giờ gửi và trạng thái đã xem.
+  const contentDiv = msgElem.querySelector('.message-content');
+  if (contentDiv) contentDiv.textContent = newContent || 'Tin nhắn đã được thu hồi';
+}
+
+function appendMessage(message) {
+  const container = document.getElementById('messages-container');
+  const bubble = createMessageElement(message);
+  if (bubble) {
+    container.appendChild(bubble);
+    scrollToBottom();
+  }
+}
+
+async function loadMoreMessages() {
+  if (isLoadingMore || !hasMoreMessages || !activeConversationId) return;
+
+  const btn = document.getElementById('btn-load-more');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang tải...';
+  }
+  isLoadingMore = true;
+  const conversationId = activeConversationId;
+
+  try {
+    const nextPage = currentChatPage + 1;
+    const res = await fetch(`/api/chat/conversations/${conversationId}/messages?page=${nextPage}&limit=20`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    const json = await res.json();
+    if (Number(conversationId) !== Number(activeConversationId)) return;
+    if (res.ok) {
+      currentChatPage = nextPage;
+      const { messages, pagination } = json.data;
+      hasMoreMessages = pagination?.hasMore || false;
+
+      const container = document.getElementById('messages-container');
+      const prevScrollHeight = container.scrollHeight;
+
+      // Chèn các tin nhắn cũ lên đầu danh sách (dưới nút load more)
+      const loadMoreContainer = document.getElementById('load-more-container');
+      // Duyệt ngược để giữ thứ tự từ cũ đến mới khi chèn sau loadMoreContainer
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const bubble = createMessageElement(messages[i]);
+        if (bubble) {
+          if (loadMoreContainer && loadMoreContainer.nextSibling) {
+            container.insertBefore(bubble, loadMoreContainer.nextSibling);
+          } else {
+            container.prepend(bubble);
+          }
+        }
+      }
+
+      // Giữ nguyên vị trí cuộn của người dùng sau khi tải thêm tin cũ
+      container.scrollTop = container.scrollHeight - prevScrollHeight;
+
+      if (!hasMoreMessages && loadMoreContainer) {
+        loadMoreContainer.classList.add('d-none');
+      }
+    }
+  } catch (err) {
+    PatuhiApp.showToast('Lỗi khi tải thêm tin nhắn.', 'danger');
+  } finally {
+    isLoadingMore = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+>>>>>>> Stashed changes
 }
 
 function markMyMessagesAsRead() {
@@ -335,9 +548,15 @@ async function handleSendMessage(e) {
   const content = input.value.trim();
   if (!content || !activeConversationId) return;
 
+<<<<<<< Updated upstream
+=======
+  const imageToSend = selectedChatImage;
+  const conversationId = activeConversationId;
+>>>>>>> Stashed changes
   input.value = '';
 
   try {
+<<<<<<< Updated upstream
     const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
       method: 'POST',
       headers: {
@@ -346,13 +565,44 @@ async function handleSendMessage(e) {
       },
       body: JSON.stringify({ content })
     });
+=======
+    let res;
+    if (imageToSend) {
+      const formData = new FormData();
+      if (content) formData.append('content', content);
+      formData.append('image', imageToSend);
+
+      res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: formData
+      });
+    } else {
+      res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
+    }
+
+>>>>>>> Stashed changes
     const json = await res.json();
     if (res.ok) {
-      // Nếu socket chưa kết nối, tự thêm thủ công
-      if (!socket || !socket.connected) {
+      // HTTP xác nhận gửi thành công; createMessageElement loại tin trùng với socket.
+      if (Number(conversationId) === Number(activeConversationId)) {
         appendMessage(json.data.message);
       }
+<<<<<<< Updated upstream
       updateConversationLastMessage(activeConversationId, content);
+=======
+      const displayLast = content || '[Hình ảnh]';
+      updateConversationLastMessage(conversationId, displayLast);
+>>>>>>> Stashed changes
     } else {
       PatuhiApp.showToast(json.message, 'danger');
     }
@@ -375,6 +625,6 @@ function scrollToBottom() {
 
 function escapeHtml(text) {
   const div = document.createElement('div');
-  div.innerText = text;
+  div.textContent = text;
   return div.innerHTML;
 }

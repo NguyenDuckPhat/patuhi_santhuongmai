@@ -248,6 +248,45 @@
     </div>
   </div>
 
+<<<<<<< Updated upstream
+=======
+  <!-- Modal Xem Chi Tiết Bình Luận -->
+  <div class="modal fade" id="commentDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-chat-square-text text-warning me-2"></i>Chi tiết bình luận</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <img id="comment-detail-avatar" src="" class="rounded-circle" width="48" height="48" style="object-fit:cover;" alt="Avatar">
+            <div>
+              <div class="fw-bold" id="comment-detail-name"></div>
+              <div class="text-muted small" id="comment-detail-username"></div>
+            </div>
+          </div>
+          <dl class="row small mb-3">
+            <dt class="col-sm-3 text-muted">Sản phẩm</dt>
+            <dd class="col-sm-9"><a id="comment-detail-product" href="#" target="_blank" class="text-decoration-none"></a></dd>
+            <dt class="col-sm-3 text-muted">Thời gian gửi</dt>
+            <dd class="col-sm-9" id="comment-detail-time"></dd>
+            <dt class="col-sm-3 text-muted">Đánh giá</dt>
+            <dd class="col-sm-9" id="comment-detail-rating"></dd>
+            <dt class="col-sm-3 text-muted">Trạng thái</dt>
+            <dd class="col-sm-9"><span class="badge" id="comment-detail-status"></span></dd>
+          </dl>
+          <label class="form-label fw-semibold">Nội dung bình luận</label>
+          <div class="border rounded-3 bg-light p-3" id="comment-detail-content" style="white-space: pre-wrap; word-break: break-word;"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+>>>>>>> Stashed changes
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/main.js"></script>
   <script src="/js/admin.js"></script>

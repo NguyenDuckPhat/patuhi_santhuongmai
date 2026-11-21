@@ -9,7 +9,8 @@ if (dialect === 'sqlite') {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '../../database.sqlite'),
-    logging: false
+    logging: false,
+    define: { underscored: true }
   });
 } else {
   // Cấu hình MySQL mặc định

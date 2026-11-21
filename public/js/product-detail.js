@@ -86,11 +86,8 @@ async function loadProductDetail(id) {
     `).join('');
 
     // Seller Info
-    const seller = product.seller || {};
-    document.getElementById('seller-name').innerText = seller.full_name || 'Người bán';
-    document.getElementById('seller-username').innerText = `@${seller.username || 'user'}`;
-    document.getElementById('seller-avatar').src = seller.avatar || '/uploads/avatars/default.png';
-    sellerPhone = product.phone_contact || seller.phone || 'Chưa cung cấp số';
+    renderSeller(product);
+    document.getElementById('comment-rating-row').hidden = product.is_owner || product.status !== 'approved';
 
     // Action Buttons (Chat & Edit)
     const actionContainer = document.getElementById('detail-action-buttons');
@@ -136,6 +133,37 @@ async function loadProductDetail(id) {
     }
   } catch (err) {
     console.error('Lỗi chi tiết:', err);
+  }
+}
+
+async function renderSeller(product) {
+  const seller = product.seller || {};
+  const name = seller.full_name || seller.username || 'Người bán';
+  const initials = document.getElementById('seller-initials');
+  initials.textContent = name.trim().split(/\s+/).slice(-2).map(word => Array.from(word)[0]).join('').toUpperCase();
+  const avatar = document.getElementById('seller-avatar');
+  if (seller.avatar && seller.avatar !== '/uploads/avatars/default.png') {
+    avatar.onload = () => { avatar.hidden = false; initials.hidden = true; };
+    avatar.onerror = () => { avatar.hidden = true; initials.hidden = false; };
+    avatar.src = seller.avatar;
+  }
+  document.getElementById('seller-name').textContent = name;
+  document.getElementById('seller-profile-link').href = `/profile?profile=${seller.id}`;
+  const activity = document.getElementById('seller-activity');
+  activity.textContent = 'Đang tải hoạt động…';
+  sellerPhone = product.phone_contact || seller.phone || 'Chưa cung cấp số';
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/users/${seller.id}/seller`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new Error('Không thể tải người bán');
+    const { last_active_at } = (await res.json()).data;
+    activity.textContent = last_active_at
+      ? `Hoạt động ${PatuhiApp.formatTimeAgo(last_active_at).toLowerCase()}` : 'Chưa có dữ liệu hoạt động';
+  } catch (error) {
+    activity.textContent = 'Không thể tải hoạt động';
   }
 }
 
@@ -328,3 +356,176 @@ async function submitReport(event) {
     PatuhiApp.showToast('Lỗi khi gửi báo cáo.', 'danger');
   }
 }
+<<<<<<< Updated upstream
+=======
+
+// ==========================================
+// BÌNH LUẬN SẢN PHẨM (chỉ hiển thị bình luận đã được Admin duyệt)
+// ==========================================
+
+function setCommentAvatar(imageElement, name) {
+  imageElement.onerror = function () {
+    this.onerror = null;
+    this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=ff8800&color=fff`;
+  };
+}
+
+function buildCommentElement(comment) {
+  const user = comment.user || {};
+  const displayName = user.full_name || user.username || 'Người dùng';
+
+  const item = document.createElement('div');
+  item.className = 'comment-item';
+
+  const header = document.createElement('div');
+  header.className = 'd-flex align-items-center gap-2 mb-2';
+
+  const avatar = document.createElement('img');
+  avatar.className = 'rounded-circle comment-avatar';
+  avatar.width = 42;
+  avatar.height = 42;
+  avatar.alt = 'Avatar người bình luận';
+  avatar.src = user.avatar || '/uploads/avatars/default.png';
+  setCommentAvatar(avatar, displayName);
+
+  const info = document.createElement('div');
+  const name = document.createElement('div');
+  name.className = 'fw-semibold small';
+  name.textContent = displayName;
+  const time = document.createElement('div');
+  time.className = 'text-muted small';
+  time.textContent = PatuhiApp.formatTimeAgo(comment.created_at || comment.createdAt);
+  info.append(name, time);
+  if (comment.rating) {
+    const rating = document.createElement('div');
+    rating.className = 'text-warning-emphasis small';
+    rating.textContent = `★ ${comment.rating}/5`;
+    info.append(rating);
+  }
+
+  header.append(avatar, info);
+  item.appendChild(header);
+
+  const content = document.createElement('div');
+  content.className = 'comment-content text-secondary';
+  content.textContent = comment.content || '';
+  item.appendChild(content);
+
+  return item;
+}
+
+function renderCommentAuth() {
+  const user = PatuhiApp.currentUser;
+  const form = document.getElementById('comment-form');
+  const guest = document.getElementById('comment-guest');
+
+  if (user) {
+    form.classList.remove('d-none');
+    guest.classList.add('d-none');
+    const avatar = document.getElementById('comment-avatar');
+    avatar.src = user.avatar || '/uploads/avatars/default.png';
+    setCommentAvatar(avatar, user.full_name || user.username);
+    document.getElementById('comment-user-name').textContent = user.full_name || user.username || '';
+  } else {
+    form.classList.add('d-none');
+    guest.classList.remove('d-none');
+    document.getElementById('comment-login-link').href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+  }
+}
+
+async function loadComments(productId) {
+  const list = document.getElementById('comment-list');
+  const empty = document.getElementById('comment-empty');
+
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(productId)}/comments`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      list.textContent = 'Không thể tải bình luận lúc này.';
+      document.getElementById('comment-total').textContent = '0 bình luận';
+      return;
+    }
+
+    const { comments = [], total = 0 } = json.data || {};
+    document.getElementById('comment-total').textContent = `${total} bình luận`;
+    list.replaceChildren();
+    comments.forEach(comment => list.appendChild(buildCommentElement(comment)));
+    empty.classList.toggle('d-none', comments.length > 0);
+  } catch (e) {
+    list.textContent = 'Không thể tải bình luận lúc này.';
+  }
+}
+
+async function initComments(productId) {
+  // main.js cũng gọi checkAuth(); gọi lại ở đây để đảm bảo có trạng thái đăng nhập
+  // trước khi quyết định hiển thị form hay thông báo yêu cầu đăng nhập.
+  await PatuhiApp.checkAuth();
+  commentProductId = productId;
+  renderCommentAuth();
+
+  const input = document.getElementById('comment-content');
+  input.addEventListener('input', () => {
+    document.getElementById('comment-counter').textContent = `${input.value.length}/1000`;
+    input.setCustomValidity('');
+  });
+
+  await loadComments(productId);
+}
+
+async function submitComment(event) {
+  event.preventDefault();
+  if (!commentProductId || !PatuhiApp.currentUser) {
+    PatuhiApp.showToast('Vui lòng đăng nhập để bình luận sản phẩm.', 'warning');
+    setTimeout(() => {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    }, 1200);
+    return;
+  }
+
+  const input = document.getElementById('comment-content');
+  const content = input.value.trim();
+  if (!content) {
+    input.setCustomValidity('Vui lòng nhập nội dung bình luận.');
+    input.reportValidity();
+    return;
+  }
+  input.setCustomValidity('');
+
+  const submitButton = document.getElementById('comment-submit');
+  const ratingInput = document.getElementById('comment-rating');
+  const rating = document.getElementById('comment-rating-row').hidden || !ratingInput.value
+    ? null : Number(ratingInput.value);
+  submitButton.disabled = true;
+
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(commentProductId)}/comments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content, rating })
+    });
+    const json = await res.json();
+
+    if (res.ok) {
+      input.value = '';
+      ratingInput.value = '';
+      document.getElementById('comment-counter').textContent = '0/1000';
+      // Không thêm bình luận vào danh sách: bình luận chỉ công khai sau khi Admin duyệt.
+      PatuhiApp.showToast(
+        json.message || 'Bình luận của bạn đã được gửi thành công và đang chờ quản trị viên xét duyệt.',
+        'success'
+      );
+    } else {
+      PatuhiApp.showToast(json.message || 'Không thể gửi bình luận.', 'danger');
+    }
+  } catch (e) {
+    PatuhiApp.showToast('Lỗi kết nối khi gửi bình luận.', 'danger');
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+>>>>>>> Stashed changes
