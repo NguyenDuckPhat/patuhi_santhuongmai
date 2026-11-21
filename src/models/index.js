@@ -11,6 +11,7 @@ const initModels = (sequelizeInstance) => {
   const Conversation = require('./Conversation')(sequelize);
   const Message = require('./Message')(sequelize);
   const Report = require('./Report')(sequelize);
+  const Comment = require('./Comment')(sequelize);
 
   // Quan hệ User - Product
   User.hasMany(Product, { foreignKey: 'user_id', as: 'products', onDelete: 'CASCADE' });
@@ -54,6 +55,13 @@ const initModels = (sequelizeInstance) => {
   Product.hasMany(Report, { foreignKey: 'product_id', as: 'reports', onDelete: 'CASCADE' });
   Report.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
+  // Quan hệ Comment (bình luận sản phẩm)
+  User.hasMany(Comment, { foreignKey: 'user_id', as: 'comments', onDelete: 'CASCADE' });
+  Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+  Product.hasMany(Comment, { foreignKey: 'product_id', as: 'comments', onDelete: 'CASCADE' });
+  Comment.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
   return {
     sequelize,
     User,
@@ -63,7 +71,8 @@ const initModels = (sequelizeInstance) => {
     Favorite,
     Conversation,
     Message,
-    Report
+    Report,
+    Comment
   };
 };
 

@@ -11,9 +11,11 @@ const ensureDirExists = (dirPath) => {
 
 const productUploadDir = path.join(__dirname, '../../public/uploads/products');
 const avatarUploadDir = path.join(__dirname, '../../public/uploads/avatars');
+const chatUploadDir = path.join(__dirname, '../../public/uploads/chats');
 
 ensureDirExists(productUploadDir);
 ensureDirExists(avatarUploadDir);
+ensureDirExists(chatUploadDir);
 
 // Cấu hình storage cho ảnh sản phẩm
 const productStorage = multer.diskStorage({
@@ -68,7 +70,28 @@ const uploadAvatar = multer({
   fileFilter
 }).single('avatar');
 
+// Cấu hình storage cho ảnh tin nhắn chat
+const chatStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    ensureDirExists(chatUploadDir);
+    cb(null, chatUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `chat-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Upload ảnh tin nhắn chat (1 ảnh, tối đa 5MB)
+const uploadChatImage = multer({
+  storage: chatStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter
+}).single('image');
+
 module.exports = {
   uploadProductImages,
-  uploadAvatar
+  uploadAvatar,
+  uploadChatImage
 };

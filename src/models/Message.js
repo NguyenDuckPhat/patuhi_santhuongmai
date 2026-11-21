@@ -20,9 +20,17 @@ module.exports = (sequelize) => {
       },
       content: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: true
+      },
+      image_url: {
+        type: DataTypes.STRING(255),
+        allowNull: true
       },
       is_read: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      },
+      is_recalled: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
       }

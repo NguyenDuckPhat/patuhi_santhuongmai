@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(50) NOT NULL UNIQUE,
   `email` VARCHAR(100) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NULL,
-  `google_id` VARCHAR(100) NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
   `full_name` VARCHAR(100) NOT NULL,
   `phone` VARCHAR(20) NULL,
   `avatar` VARCHAR(255) DEFAULT '/uploads/avatars/default.png',
@@ -52,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `status` ENUM('pending', 'approved', 'rejected', 'sold', 'hidden') DEFAULT 'pending',
   `rejection_reason` VARCHAR(255) NULL,
   `views` INT DEFAULT 0,
+  `specs` TEXT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
@@ -100,8 +100,10 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `conversation_id` INT NOT NULL,
   `sender_id` INT NOT NULL,
-  `content` TEXT NOT NULL,
+  `content` TEXT NULL,
+  `image_url` VARCHAR(255) NULL,
   `is_read` BOOLEAN DEFAULT FALSE,
+  `is_recalled` BOOLEAN DEFAULT FALSE,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`conversation_id`) REFERENCES `conversations`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
@@ -120,4 +122,18 @@ CREATE TABLE IF NOT EXISTS `reports` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. BẢNG BÌNH LUẬN SẢN PHẨM (comments)
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `product_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `content` TEXT NOT NULL,
+  `status` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_comments_product_status` (`product_id`, `status`),
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

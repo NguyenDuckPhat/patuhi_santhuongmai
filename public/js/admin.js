@@ -1,5 +1,8 @@
 // Logic xử lý toàn diện cho Bảng Điều Khiển Admin (Patuhi Dashboard)
 
+let adminCommentsCache = [];
+let commentSearchTimer = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await PatuhiApp.checkAuth();
   if (!user || user.role !== 'admin') {
@@ -15,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function switchAdminTab(tab) {
-  ['pending', 'users', 'categories', 'reports'].forEach(t => {
+  ['pending', 'users', 'categories', 'reports', 'comments'].forEach(t => {
     document.getElementById(`admin-tab-${t}`).classList.add('d-none');
     document.getElementById(`tab-btn-${t}`).classList.remove('active');
   });
@@ -27,6 +30,7 @@ function switchAdminTab(tab) {
   else if (tab === 'users') loadAdminUsers();
   else if (tab === 'categories') loadAdminCategories();
   else if (tab === 'reports') loadAdminReports();
+  else if (tab === 'comments') loadAdminComments();
 }
 
 // 1. Tải Thống Kê Tổng Quan (Requirements 32, 33, 34)
@@ -53,6 +57,13 @@ async function loadDashboardStats() {
 
     document.getElementById('stat-total-reports').innerText = reports.total;
     document.getElementById('stat-pending-reports').innerText = `${reports.pending} Chờ xử lý`;
+
+    const commentStats = json.data.comments || {};
+    document.getElementById('badge-pending-comments').innerText = commentStats.pending || 0;
+    document.getElementById('stat-total-comments').innerText = commentStats.total || 0;
+    document.getElementById('stat-pending-comments').innerText = commentStats.pending || 0;
+    document.getElementById('stat-approved-comments').innerText = commentStats.approved || 0;
+    document.getElementById('stat-rejected-comments').innerText = commentStats.rejected || 0;
   } catch (err) {
     console.error('Lỗi tải thống kê:', err);
   }
@@ -551,5 +562,228 @@ async function processReportAction(id, status, hide_product) {
     }
   } catch (e) {
     PatuhiApp.showToast('Lỗi xử lý báo cáo.', 'danger');
+  }
+}
+
+// 6. Quản Lý Bình Luận Sản Phẩm
+function escapeCommentHtml(value) {
+  return String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[ch]);
+}
+
+function scheduleCommentReload() {
+  clearTimeout(commentSearchTimer);
+  commentSearchTimer = setTimeout(loadAdminComments, 300);
+}
+
+async function loadAdminComments() {
+  const container = document.getElementById('admin-comments-container');
+  const status = document.getElementById('comment-status-filter').value;
+  const q = document.getElementById('admin-search-comment').value.trim();
+
+  container.innerHTML = '<div class="text-center py-4 text-muted">Đang tải bình luận...</div>';
+
+  try {
+    const params = new URLSearchParams({ status, q, limit: '50' });
+    const res = await fetch(`/api/admin/comments?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      container.innerHTML = `<div class="alert alert-danger">${escapeCommentHtml(json.message)}</div>`;
+      return;
+    }
+
+    const { comments = [] } = json.data || {};
+    adminCommentsCache = comments;
+    const startIndex = ((Number(json.data && json.data.page) - 1) * 50) || 0;
+    if (comments.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted">Không có bình luận nào phù hợp!</div>';
+      return;
+    }
+
+    const statusInfo = {
+      PENDING: { label: 'Chờ duyệt', badge: 'bg-warning text-dark' },
+      APPROVED: { label: 'Đã duyệt', badge: 'bg-success' },
+      REJECTED: { label: 'Bị từ chối', badge: 'bg-danger' }
+    };
+
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>STT</th>
+              <th>Hình ảnh</th>
+              <th>Sản phẩm</th>
+              <th>Người bình luận</th>
+              <th>Nội dung</th>
+              <th>Thời gian</th>
+              <th>Trạng thái</th>
+              <th class="text-end">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${comments.map((c, index) => {
+              const user = c.user || {};
+              const product = c.product || {};
+              const images = product.images || [];
+              const productImage = images.find(img => img.is_primary) || images[0];
+              const st = statusInfo[c.status] || statusInfo.PENDING;
+              const name = escapeCommentHtml(user.full_name || user.username || 'Người dùng');
+              const username = escapeCommentHtml(user.username || '');
+              const avatar = escapeCommentHtml(user.avatar || '/uploads/avatars/default.png');
+              const productTitle = escapeCommentHtml(product.title || '(Sản phẩm đã gỡ)');
+              const productThumb = escapeCommentHtml(productImage ? productImage.image_url : 'https://placehold.co/50x50');
+              const content = escapeCommentHtml(c.content);
+              const time = escapeCommentHtml(PatuhiApp.formatTimeAgo(c.created_at || c.createdAt));
+
+              return `
+                <tr>
+                  <td class="text-muted small">${startIndex + index + 1}</td>
+                  <td>
+                    <img src="${productThumb}" width="50" height="50" class="rounded border" style="object-fit:cover;" onerror="this.onerror=null;this.src='https://placehold.co/50x50'">
+                  </td>
+                  <td>
+                    ${product.id ? `<a href="/product/${Number(product.id)}" target="_blank" class="text-decoration-none small fw-semibold">${productTitle}</a>` : `<span class="text-muted small">${productTitle}</span>`}
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <img src="${avatar}" width="38" height="38" class="rounded-circle" style="object-fit:cover;" onerror="this.style.display='none'">
+                      <div>
+                        <div class="small fw-semibold">${name}</div>
+                        <div class="text-muted small">@${username}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="small text-secondary" style="max-width: 360px; white-space: pre-wrap; word-break: break-word;">${content}</div>
+                  </td>
+                  <td class="text-muted small text-nowrap">${time}</td>
+                  <td><span class="badge ${st.badge}">${escapeCommentHtml(st.label)}</span></td>
+                  <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1" onclick="openCommentDetailModal(${Number(c.id)})" title="Xem chi tiết">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    ${c.status !== 'APPROVED' ? `
+                      <button class="btn btn-sm btn-success rounded-pill px-2 me-1" onclick="reviewCommentAction(${Number(c.id)}, 'approve')" title="Duyệt">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    ` : ''}
+                    ${c.status !== 'REJECTED' ? `
+                      <button class="btn btn-sm btn-outline-danger rounded-pill px-2 me-1" onclick="reviewCommentAction(${Number(c.id)}, 'reject')" title="Từ chối">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-danger rounded-pill px-2" onclick="removeCommentAction(${Number(c.id)})" title="Xóa">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="alert alert-danger">Lỗi kết nối tải bình luận.</div>';
+  }
+}
+
+async function reviewCommentAction(id, action) {
+  try {
+    const res = await fetch(`/api/admin/comments/${id}/review`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      PatuhiApp.showToast(json.message, 'success');
+      loadAdminComments();
+      loadDashboardStats();
+    } else {
+      PatuhiApp.showToast(json.message, 'danger');
+    }
+  } catch (e) {
+    PatuhiApp.showToast('Lỗi máy chủ khi duyệt bình luận.', 'danger');
+  }
+}
+
+function openCommentDetailModal(id) {
+  const comment = adminCommentsCache.find(item => item.id === id);
+  if (!comment) {
+    PatuhiApp.showToast('Không tìm thấy thông tin bình luận.', 'danger');
+    return;
+  }
+
+  const user = comment.user || {};
+  const product = comment.product || {};
+  const statusInfo = {
+    PENDING: { label: 'Chờ duyệt', badge: 'bg-warning text-dark' },
+    APPROVED: { label: 'Đã duyệt', badge: 'bg-success' },
+    REJECTED: { label: 'Bị từ chối', badge: 'bg-danger' }
+  };
+  const st = statusInfo[comment.status] || statusInfo.PENDING;
+  const name = user.full_name || user.username || 'Người dùng';
+
+  // Mọi nội dung động đều dùng textContent để tránh XSS
+  const avatar = document.getElementById('comment-detail-avatar');
+  avatar.onerror = function () {
+    this.onerror = null;
+    this.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=ff8800&color=fff';
+  };
+  avatar.src = user.avatar || '/uploads/avatars/default.png';
+
+  document.getElementById('comment-detail-name').textContent = name;
+  document.getElementById('comment-detail-username').textContent = '@' + (user.username || '');
+
+  const productLink = document.getElementById('comment-detail-product');
+  if (product.id) {
+    productLink.textContent = product.title || '';
+    productLink.href = '/product/' + Number(product.id);
+  } else {
+    productLink.textContent = '(Sản phẩm đã gỡ)';
+    productLink.removeAttribute('href');
+  }
+
+  document.getElementById('comment-detail-time').textContent = PatuhiApp.formatTimeAgo(comment.created_at || comment.createdAt);
+
+  const statusBadge = document.getElementById('comment-detail-status');
+  statusBadge.className = 'badge ' + st.badge;
+  statusBadge.textContent = st.label;
+
+  document.getElementById('comment-detail-content').textContent = comment.content || '';
+
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('commentDetailModal')).show();
+}
+
+async function removeCommentAction(id) {
+  if (!confirm('Bạn có chắc chắn muốn xóa bình luận này? Hành động này không thể hoàn tác.')) return;
+
+  try {
+    const res = await fetch(`/api/admin/comments/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    });
+    const json = await res.json();
+    if (res.ok) {
+      PatuhiApp.showToast(json.message, 'success');
+      loadAdminComments();
+      loadDashboardStats();
+    } else {
+      PatuhiApp.showToast(json.message, 'danger');
+    }
+  } catch (e) {
+    PatuhiApp.showToast('Lỗi máy chủ khi xóa bình luận.', 'danger');
   }
 }

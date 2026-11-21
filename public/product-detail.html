@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .main-img-box {
+      position: relative;
       width: 100%;
       height: 420px;
       background: #f8f9fa;
@@ -18,6 +19,34 @@
       align-items: center;
       justify-content: center;
     }
+    .image-counter {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+    .image-nav-button {
+      position: absolute;
+      top: 50%;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      transform: translateY(-50%);
+    }
+    .image-nav-button:hover { background: rgba(0, 0, 0, 0.75); }
+    .image-nav-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .image-nav-previous { left: 12px; }
+    .image-nav-next { right: 12px; }
     .main-img-box img {
       max-width: 100%;
       max-height: 100%;
@@ -36,6 +65,30 @@
     .thumb-img.active, .thumb-img:hover {
       border-color: var(--primary-color);
       opacity: 1;
+    }
+    /* Khu vực bình luận sản phẩm */
+    .comment-avatar {
+      width: 42px;
+      height: 42px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #f1f3f5;
+    }
+    .comment-item {
+      border: 1px solid #eaeaea;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+    }
+    .comment-item + .comment-item { margin-top: 12px; }
+    .comment-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+    @media (max-width: 575.98px) {
+      .comment-avatar { width: 36px; height: 36px; }
+      .comment-item { padding: 12px; }
     }
   </style>
 </head>
@@ -74,6 +127,13 @@
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
           <div class="main-img-box mb-3">
             <img id="detail-main-img" src="" alt="Sản phẩm">
+            <button type="button" class="image-nav-button image-nav-previous" id="detail-image-previous" onclick="navigateProductImage(-1)" aria-label="Ảnh trước" hidden>
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="image-nav-button image-nav-next" id="detail-image-next" onclick="navigateProductImage(1)" aria-label="Ảnh tiếp theo" hidden>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <span class="image-counter" id="detail-image-counter" aria-live="polite">1/1</span>
           </div>
           <div class="d-flex gap-2 overflow-auto pb-2" id="detail-thumbnails">
             <!-- Thumbs -->
@@ -81,10 +141,44 @@
         </div>
 
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
-          <h5 class="fw-bold mb-3"><i class="bi bi-card-text text-warning me-2"></i>Mô tả chi tiết</h5>
+          <h5 class="fw-bold mb-3"><i class="bi bi-card-text text-warning me-2"></i>Mô tả từ người bán</h5>
           <div id="detail-description" class="text-secondary" style="white-space: pre-line; line-height: 1.7;">
           </div>
         </div>
+
+        <!-- Đánh giá và bình luận sản phẩm -->
+        <section class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" id="product-comments">
+          <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+            <h5 class="fw-bold mb-0"><i class="bi bi-chat-square-text text-warning me-2"></i>Đánh giá và bình luận sản phẩm</h5>
+            <span class="badge bg-primary-subtle text-primary text-nowrap" id="comment-total">0 bình luận</span>
+          </div>
+
+          <div id="comment-guest" class="alert alert-light border d-none mb-4">
+            <i class="bi bi-info-circle text-primary me-2"></i>Vui lòng đăng nhập để bình luận sản phẩm.
+            <a href="#" id="comment-login-link" class="fw-bold text-decoration-none ms-1">Đăng nhập ngay</a>
+          </div>
+
+          <form id="comment-form" class="d-none mb-4" onsubmit="submitComment(event)">
+            <div class="d-flex align-items-start gap-3">
+              <img id="comment-avatar" src="/uploads/avatars/default.png" class="rounded-circle comment-avatar" alt="Avatar người dùng">
+              <div class="flex-grow-1">
+                <div class="fw-semibold small mb-2" id="comment-user-name"></div>
+                <textarea id="comment-content" class="form-control" rows="3" maxlength="1000" placeholder="Hãy chia sẻ cảm nhận của bạn về sản phẩm này..."></textarea>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                  <span class="text-muted small" id="comment-counter">0/1000</span>
+                  <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4" id="comment-submit">
+                    <i class="bi bi-send me-1"></i>Gửi bình luận
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div id="comment-list"></div>
+          <div id="comment-empty" class="text-center text-muted py-4 d-none">
+            Chưa có bình luận nào cho sản phẩm này. Hãy là người đầu tiên chia sẻ cảm nhận!
+          </div>
+        </section>
       </div>
 
       <!-- Right Column: Info & Seller -->
@@ -93,6 +187,11 @@
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <span class="badge bg-secondary condition-badge" id="detail-condition">Tình trạng</span>
+          <p id="detail-condition-detail" class="mt-2 text-muted" hidden></p>
+          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" id="detail-specs-section" hidden>
+            <h5 class="fw-bold mb-3"><i class="bi bi-list-columns text-warning me-2"></i>Thông số & dữ liệu</h5>
+            <div id="detail-specs"></div>
+          </div>
             <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="btn-favorite-detail" onclick="handleDetailFavorite()">
               <i class="bi bi-heart me-1"></i> Lưu tin
             </button>
@@ -143,7 +242,14 @@
           </div>
         </div>
 
-        <!-- Report violation link -->
+                  <!-- An toàn giao dịch -->
+          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <h6 class="fw-bold mb-3 text-muted text-uppercase small">An toàn giao dịch</h6>
+            <p class="mb-0 text-secondary" id="detail-safety">
+              Đừng chuyển tiền trước khi nhận hàng. Gặp mặt tại nơi công cộng, kiểm tra hàng hóa kỹ trước khi thanh toán. Nếu gặp vấn đề, liên hệ hỗ trợ ngay.
+            </p>
+          </div>
+          <!-- Report violation link -->
         <div class="text-center">
           <button class="btn btn-link text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportModal">
             <i class="bi bi-flag me-1"></i> Báo cáo tin đăng có dấu hiệu vi phạm
