@@ -211,7 +211,8 @@ async function selectConversation(conversationId) {
   messagesContainer.innerHTML = '<div class="text-center py-5 text-muted">Đang tải tin nhắn...</div>';
   document.getElementById('message-input').disabled = true;
   document.getElementById('btn-send-msg').disabled = true;
-  document.getElementById('btn-attach-image').disabled = true;
+  const attachButton = document.getElementById('btn-attach-image');
+  if (attachButton) attachButton.disabled = true;
   cancelImagePreview();
 
   try {
@@ -249,6 +250,7 @@ async function selectConversation(conversationId) {
     // Enable input
     document.getElementById('message-input').disabled = false;
     document.getElementById('btn-send-msg').disabled = false;
+    if (attachButton) attachButton.disabled = false;
     document.getElementById('message-input').focus();
 
     // Render messages
@@ -271,11 +273,6 @@ async function selectConversation(conversationId) {
   }
 }
 
-<<<<<<< Updated upstream
-function appendMessage(message) {
-  const container = document.getElementById('messages-container');
-  const isMine = message.sender_id === myUser.id;
-=======
 let selectedChatImage = null;
 
 function handleImageSelected(event) {
@@ -323,7 +320,6 @@ function cancelImagePreview() {
 
 function createMessageElement(message) {
   const isMine = Number(message.sender_id) === Number(myUser.id);
->>>>>>> Stashed changes
   const messageId = Number(message.id);
   if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
 
@@ -334,25 +330,11 @@ function createMessageElement(message) {
     : 'Vừa xong';
   const isRead = message.is_read === true || message.is_read === 1;
 
-<<<<<<< Updated upstream
-  const div = document.createElement('div');
-  div.className = `msg-bubble ${isMine ? 'sent' : 'received'}`;
-  if (Number.isFinite(messageId)) div.id = `message-${messageId}`;
-  div.innerHTML = `
-    <div>${escapeHtml(message.content)}</div>
-    <div class="text-end" style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
-      ${timeLabel}
-      ${isMine ? `<span class="message-read-status ms-1" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
-    </div>
-  `;
-  container.appendChild(div);
-  scrollToBottom();
-=======
   const imageHtml = message.image_url && !message.is_recalled ? `
     <div class="message-image mb-2">
-      <a href="${message.image_url}" target="_blank" rel="noopener noreferrer">
-        <img src="${message.image_url}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
-      </a>
+      <button type="button" class="chat-image-button border-0 p-0 bg-transparent" data-chat-image="${escapeHtml(message.image_url)}" aria-label="Mở ảnh tin nhắn">
+        <img src="${escapeHtml(message.image_url)}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
+      </button>
     </div>
   ` : '';
   const contentHtml = `<div class="message-content">${escapeHtml(message.content || '')}</div>`;
@@ -387,6 +369,11 @@ function createMessageElement(message) {
 function setupRecallButtonHandler() {
   document.addEventListener('click', async (e) => {
     const target = e.target;
+    const imageButton = target.closest?.('.chat-image-button');
+    if (imageButton) {
+      openChatImageModal(imageButton.dataset.chatImage);
+      return;
+    }
     if (target && target.matches('.recall-btn')) {
       const messageId = target.dataset.messageId;
       const conversationId = activeConversationId;
@@ -498,7 +485,14 @@ async function loadMoreMessages() {
       btn.innerHTML = originalText;
     }
   }
->>>>>>> Stashed changes
+}
+
+function openChatImageModal(imageUrl) {
+  const image = document.getElementById('chat-image-modal-content');
+  const modalElement = document.getElementById('chatImageModal');
+  if (!image || !modalElement || !imageUrl) return;
+  image.src = imageUrl;
+  bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
 
 function markMyMessagesAsRead() {
@@ -546,26 +540,14 @@ async function handleSendMessage(e) {
   e.preventDefault();
   const input = document.getElementById('message-input');
   const content = input.value.trim();
-  if (!content || !activeConversationId) return;
+  if ((!content && !selectedChatImage) || !activeConversationId) return;
 
-<<<<<<< Updated upstream
-=======
   const imageToSend = selectedChatImage;
   const conversationId = activeConversationId;
->>>>>>> Stashed changes
   input.value = '';
+  cancelImagePreview();
 
   try {
-<<<<<<< Updated upstream
-    const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ content })
-    });
-=======
     let res;
     if (imageToSend) {
       const formData = new FormData();
@@ -590,19 +572,14 @@ async function handleSendMessage(e) {
       });
     }
 
->>>>>>> Stashed changes
     const json = await res.json();
     if (res.ok) {
       // HTTP xác nhận gửi thành công; createMessageElement loại tin trùng với socket.
       if (Number(conversationId) === Number(activeConversationId)) {
         appendMessage(json.data.message);
       }
-<<<<<<< Updated upstream
-      updateConversationLastMessage(activeConversationId, content);
-=======
       const displayLast = content || '[Hình ảnh]';
       updateConversationLastMessage(conversationId, displayLast);
->>>>>>> Stashed changes
     } else {
       PatuhiApp.showToast(json.message, 'danger');
     }

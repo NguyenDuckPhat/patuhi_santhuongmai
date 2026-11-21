@@ -1,4 +1,6 @@
 // Logic xử lý toàn diện cho Bảng Điều Khiển Admin (Patuhi Dashboard)
+let commentSearchTimer = null;
+let adminCommentsCache = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await PatuhiApp.checkAuth();
@@ -15,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function switchAdminTab(tab) {
-  ['pending', 'users', 'categories', 'reports'].forEach(t => {
+  ['pending', 'users', 'categories', 'reports', 'comments'].forEach(t => {
     document.getElementById(`admin-tab-${t}`).classList.add('d-none');
     document.getElementById(`tab-btn-${t}`).classList.remove('active');
   });
@@ -27,6 +29,7 @@ function switchAdminTab(tab) {
   else if (tab === 'users') loadAdminUsers();
   else if (tab === 'categories') loadAdminCategories();
   else if (tab === 'reports') loadAdminReports();
+  else if (tab === 'comments') loadAdminComments();
 }
 
 // 1. Tải Thống Kê Tổng Quan (Requirements 32, 33, 34)
@@ -38,7 +41,7 @@ async function loadDashboardStats() {
     const json = await res.json();
     if (!res.ok) return;
 
-    const { users, products, reports } = json.data;
+    const { users, products, reports, comments } = json.data;
 
     document.getElementById('stat-total-users').innerText = users.total;
     document.getElementById('stat-active-users').innerText = `${users.active} Hoạt động`;
@@ -53,6 +56,7 @@ async function loadDashboardStats() {
 
     document.getElementById('stat-total-reports').innerText = reports.total;
     document.getElementById('stat-pending-reports').innerText = `${reports.pending} Chờ xử lý`;
+    document.getElementById('badge-pending-comments').innerText = comments?.pending ?? 0;
   } catch (err) {
     console.error('Lỗi tải thống kê:', err);
   }
@@ -553,9 +557,6 @@ async function processReportAction(id, status, hide_product) {
     PatuhiApp.showToast('Lỗi xử lý báo cáo.', 'danger');
   }
 }
-<<<<<<< Updated upstream
-=======
-
 // 6. Quản Lý Bình Luận Sản Phẩm
 function escapeCommentHtml(value) {
   return String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, ch => ({
@@ -779,4 +780,3 @@ async function removeCommentAction(id) {
     PatuhiApp.showToast('Lỗi máy chủ khi xóa bình luận.', 'danger');
   }
 }
->>>>>>> Stashed changes

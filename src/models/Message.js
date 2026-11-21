@@ -25,6 +25,18 @@ module.exports = (sequelize) => {
       is_read: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+      },
+      image_url: {
+        type: DataTypes.STRING(500),
+        allowNull: true
+      },
+      is_recalled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      },
+      recalled_at: {
+        type: DataTypes.DATE,
+        allowNull: true
       }
     },
     {

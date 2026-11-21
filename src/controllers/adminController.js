@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const { getSequelize } = require('../config/database');
 const initModels = require('../models');
 
@@ -396,13 +396,91 @@ const processReport = async (req, res) => {
   }
 };
 
+const getCommentsForAdmin = async (req, res) => {
+  try {
+    const status = req.query.status || 'PENDING';
+    const q = String(req.query.q || '').trim();
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const { Comment, Product, ProductImage, User } = getModels();
+    const where = {};
+    if (status !== 'all') {
+      if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
+        return res.status(400).json({ success: false, message: 'Trạng thái bình luận không hợp lệ.' });
+      }
+      where.status = status;
+    }
+    if (q) {
+      where[Op.or] = [
+        { content: { [Op.like]: `%${q}%` } },
+        { '$product.title$': { [Op.like]: `%${q}%` } },
+        { '$user.username$': { [Op.like]: `%${q}%` } },
+        { '$user.full_name$': { [Op.like]: `%${q}%` } }
+      ];
+    }
+
+    const { count, rows } = await Comment.findAndCountAll({
+      where,
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'username', 'full_name', 'avatar'] },
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'title'],
+          include: [{ model: ProductImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset: (page - 1) * limit,
+      distinct: true,
+      subQuery: false
+    });
+    return res.json({ success: true, data: { comments: rows, total: count, page, totalPages: Math.ceil(count / limit) } });
+  } catch (error) {
+    console.error('Lỗi tải bình luận quản trị:', error);
+    return res.status(500).json({ success: false, message: 'Không thể tải danh sách bình luận.' });
+  }
+};
+
+const reviewComment = async (req, res) => {
+  try {
+    const { action } = req.body;
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Hành động không hợp lệ.' });
+    }
+    const { Comment } = getModels();
+    const comment = await Comment.findByPk(req.params.id);
+    if (!comment) return res.status(404).json({ success: false, message: 'Không tìm thấy bình luận.' });
+    comment.status = action === 'approve' ? 'APPROVED' : 'REJECTED';
+    await comment.save();
+    return res.json({ success: true, message: action === 'approve' ? 'Đã duyệt bình luận.' : 'Đã từ chối bình luận.', data: { comment } });
+  } catch (error) {
+    console.error('Lỗi duyệt bình luận:', error);
+    return res.status(500).json({ success: false, message: 'Không thể xử lý bình luận.' });
+  }
+};
+
+const deleteComment = async (req, res) => {
+  try {
+    const { Comment } = getModels();
+    const comment = await Comment.findByPk(req.params.id);
+    if (!comment) return res.status(404).json({ success: false, message: 'Không tìm thấy bình luận.' });
+    await comment.destroy();
+    return res.json({ success: true, message: 'Đã xóa bình luận.' });
+  } catch (error) {
+    console.error('Lỗi xóa bình luận:', error);
+    return res.status(500).json({ success: false, message: 'Không thể xóa bình luận.' });
+  }
+};
+
 // ==========================================
 // 5. THỐNG KÊ (DASHBOARD STATS)
 // ==========================================
 
 const getDashboardStats = async (req, res) => {
   try {
-    const { User, Product, Report, Category } = getModels();
+    const { User, Product, Report, Category, Comment } = getModels();
 
     // 1. Thống kê người dùng
     const totalUsers = await User.count();
@@ -440,6 +518,15 @@ const getDashboardStats = async (req, res) => {
     const pendingReports = await Report.count({ where: { status: 'pending' } });
     const resolvedReports = await Report.count({ where: { status: 'resolved' } });
     const dismissedReports = await Report.count({ where: { status: 'dismissed' } });
+    const commentCounts = await Comment.findAll({
+      attributes: ['status', [fn('COUNT', col('id')), 'count']],
+      group: ['status']
+    });
+    const commentStats = commentCounts.reduce((result, item) => {
+      result[item.status.toLowerCase()] = Number(item.get('count'));
+      return result;
+    }, { pending: 0, approved: 0, rejected: 0 });
+    commentStats.total = commentStats.pending + commentStats.approved + commentStats.rejected;
 
     return res.status(200).json({
       success: true,
@@ -464,7 +551,8 @@ const getDashboardStats = async (req, res) => {
           pending: pendingReports,
           resolved: resolvedReports,
           dismissed: dismissedReports
-        }
+        },
+        comments: commentStats
       }
     });
   } catch (error) {
@@ -484,5 +572,8 @@ module.exports = {
   deleteCategory,
   getReports,
   processReport,
+  getCommentsForAdmin,
+  reviewComment,
+  deleteComment,
   getDashboardStats
 };

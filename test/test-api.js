@@ -11,11 +11,9 @@ const { testAndConnectDB } = require('../src/config/database');
 const initModels = require('../src/models');
 const seedData = require('../src/utils/seedData');
 const ensureProductMetadataColumns = require('../src/utils/ensureProductMetadataColumns');
-<<<<<<< Updated upstream
 const ensureUserMetadataColumns = require('../src/utils/ensureUserMetadataColumns');
-=======
 const ensureSellerColumns = require('../src/utils/ensureSellerColumns');
->>>>>>> Stashed changes
+const ensureMessageColumns = require('../src/utils/ensureMessageColumns');
 
 let server;
 let baseUrl;
@@ -65,11 +63,9 @@ const runTests = async () => {
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
     await ensureProductMetadataColumns(sequelize);
-<<<<<<< Updated upstream
     await ensureUserMetadataColumns(sequelize);
-=======
     await ensureSellerColumns(sequelize);
->>>>>>> Stashed changes
+    await ensureMessageColumns(sequelize);
 
     // Remove orphan categories left behind by older runs of this API test.
     const categoriesBeforeSeed = await models.Category.findAll({ attributes: ['id', 'name'] });
@@ -419,8 +415,6 @@ const runTests = async () => {
     }, adminToken);
     assert(processReportRes.status === 200 && processReportRes.data.data.report.status === 'resolved', '33. Xử lý báo cáo vi phạm (Admin)');
 
-<<<<<<< Updated upstream
-=======
     // ----------------------------------------------------
     // TEST 9: BÌNH LUẬN SẢN PHẨM (Gửi -> PENDING -> Admin duyệt/từ chối)
     // ----------------------------------------------------
@@ -625,7 +619,6 @@ const runTests = async () => {
       await models.Comment.destroy({ where: { id: testCommentIds } });
     }
 
->>>>>>> Stashed changes
     // Xóa tin đăng (Requirement 16)
     const deleteProdRes = await request('DELETE', `/api/products/${createdProductId}`, null, adminToken);
     assert(deleteProdRes.status === 200 && deleteProdRes.data.success, '34. Xóa tin đăng bán sản phẩm');

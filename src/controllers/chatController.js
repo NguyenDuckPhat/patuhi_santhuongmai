@@ -254,7 +254,7 @@ const sendMessage = async (req, res) => {
     const { Conversation, Message, User } = getModels();
     const userId = req.user.id;
 
-    if (!content || !content.trim()) {
+    if ((!content || !content.trim()) && !req.file) {
       return res.status(400).json({
         success: false,
         message: 'Nội dung tin nhắn không được để trống.'
@@ -279,11 +279,12 @@ const sendMessage = async (req, res) => {
     const newMessage = await Message.create({
       conversation_id: parseInt(conversationId),
       sender_id: userId,
-      content: content.trim()
+      content: content && content.trim() ? content.trim() : '[Hình ảnh]',
+      image_url: req.file ? `/uploads/chats/${req.file.filename}` : null
     });
 
     // Cập nhật last_message của cuộc hội thoại
-    conversation.last_message = content.trim();
+    conversation.last_message = content && content.trim() ? content.trim() : '[Hình ảnh]';
     conversation.last_message_at = new Date();
     await conversation.save();
 
@@ -320,10 +321,41 @@ const sendMessage = async (req, res) => {
   }
 };
 
+const recallMessage = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { Conversation, Message, User } = getModels();
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) return res.status(404).json({ success: false, message: 'Không tìm thấy cuộc trò chuyện.' });
+    if (conversation.buyer_id !== req.user.id && conversation.seller_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Bạn không thuộc cuộc trò chuyện này.' });
+    }
+    const message = await Message.findOne({ where: { id: messageId, conversation_id: conversationId } });
+    if (!message) return res.status(404).json({ success: false, message: 'Không tìm thấy tin nhắn.' });
+    if (message.is_recalled) return res.status(400).json({ success: false, message: 'Tin nhắn đã được thu hồi.' });
+    if (message.sender_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Bạn chỉ có thể thu hồi tin nhắn của mình.' });
+    }
+    message.content = 'Tin nhắn đã được thu hồi';
+    message.image_url = null;
+    message.is_recalled = true;
+    message.recalled_at = new Date();
+    await message.save();
+    const fullMessage = await Message.findByPk(message.id, { include: [{ model: User, as: 'sender', attributes: ['id', 'username', 'full_name', 'avatar'] }] });
+    const io = req.app.get('io');
+    if (io) io.to(`conversation_${conversationId}`).emit('message_recalled', fullMessage);
+    return res.json({ success: true, message: 'Đã thu hồi tin nhắn.', data: { message: fullMessage } });
+  } catch (error) {
+    console.error('Lỗi thu hồi tin nhắn:', error);
+    return res.status(500).json({ success: false, message: 'Không thể thu hồi tin nhắn.' });
+  }
+};
+
 module.exports = {
   getConversations,
   getOrCreateConversation,
   getReadStatus,
   getMessages,
-  sendMessage
+  sendMessage,
+  recallMessage
 };

@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `sender_id` INT NOT NULL,
   `content` TEXT NOT NULL,
   `is_read` BOOLEAN DEFAULT FALSE,
+  `image_url` VARCHAR(500) NULL,
+  `is_recalled` BOOLEAN DEFAULT FALSE,
+  `recalled_at` DATETIME NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`conversation_id`) REFERENCES `conversations`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
@@ -122,9 +125,6 @@ CREATE TABLE IF NOT EXISTS `reports` (
   FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-<<<<<<< Updated upstream
-=======
-
 -- 9. BẢNG BÌNH LUẬN SẢN PHẨM (comments)
 CREATE TABLE IF NOT EXISTS `comments` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -147,4 +147,3 @@ CREATE TABLE IF NOT EXISTS `seller_follows` (
   FOREIGN KEY (`seller_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`follower_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
->>>>>>> Stashed changes

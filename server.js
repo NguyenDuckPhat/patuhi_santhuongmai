@@ -1,3 +1,4 @@
+
 const http = require('http');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
@@ -8,11 +9,9 @@ const { testAndConnectDB } = require('./src/config/database');
 const initModels = require('./src/models');
 const seedData = require('./src/utils/seedData');
 const ensureProductMetadataColumns = require('./src/utils/ensureProductMetadataColumns');
-<<<<<<< Updated upstream
 const ensureUserMetadataColumns = require('./src/utils/ensureUserMetadataColumns');
-=======
 const ensureSellerColumns = require('./src/utils/ensureSellerColumns');
->>>>>>> Stashed changes
+const ensureMessageColumns = require('./src/utils/ensureMessageColumns');
 
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 3000;
 
@@ -26,16 +25,18 @@ const startServer = async () => {
     // 2. Khởi tạo Models và đồng bộ bảng
     const models = initModels(sequelize);
     await sequelize.sync({ force: false });
+
+    // Đồng bộ metadata sản phẩm, người dùng và người bán
     await ensureProductMetadataColumns(sequelize);
-<<<<<<< Updated upstream
     await ensureUserMetadataColumns(sequelize);
-=======
     await ensureSellerColumns(sequelize);
->>>>>>> Stashed changes
+    await ensureMessageColumns(sequelize);
+
     console.log('✅ Đã đồng bộ cấu trúc bảng thành công!');
 
     // 3. Tự động kiểm tra và tạo dữ liệu mẫu nếu chưa có dữ liệu
     const userCount = await models.User.count();
+
     if (userCount === 0) {
       console.log('🌱 Phát hiện cơ sở dữ liệu trống, đang nạp dữ liệu mẫu ban đầu...');
       await seedData();
@@ -46,7 +47,7 @@ const startServer = async () => {
     const io = initSocketIO(server);
     app.set('io', io);
 
-    // 5. Khởi động lắng nghe với cơ chế tự động chuyển cổng nếu bị chiếm dụng (EADDRINUSE)
+    // 5. Khởi động lắng nghe, tự chuyển cổng nếu bị chiếm dụng
     let currentPort = DEFAULT_PORT;
 
     const tryListen = () => {

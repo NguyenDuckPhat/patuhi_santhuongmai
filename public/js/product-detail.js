@@ -1,5 +1,6 @@
 let currentProduct = null;
 let sellerPhone = '';
+let commentProductId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('price-offer-amount')?.addEventListener('input', (event) => {
@@ -110,6 +111,7 @@ async function loadProductDetail(id) {
     document.getElementById('detail-loading').classList.add('d-none');
     document.getElementById('col-left').classList.remove('d-none');
     document.getElementById('col-right').classList.remove('d-none');
+    initComments(product.id);
 
     // Related Products
     if (relatedProducts && relatedProducts.length > 0) {
@@ -356,9 +358,6 @@ async function submitReport(event) {
     PatuhiApp.showToast('Lỗi khi gửi báo cáo.', 'danger');
   }
 }
-<<<<<<< Updated upstream
-=======
-
 // ==========================================
 // BÌNH LUẬN SẢN PHẨM (chỉ hiển thị bình luận đã được Admin duyệt)
 // ==========================================
@@ -528,4 +527,3 @@ async function submitComment(event) {
     submitButton.disabled = false;
   }
 }
->>>>>>> Stashed changes
