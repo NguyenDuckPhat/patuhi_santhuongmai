@@ -74,13 +74,14 @@ const runTests = async () => {
     await seedData();
 
     server = http.createServer(app);
-    await new Promise((resolve) => {
-      server.listen(0, '127.0.0.1', () => {
+    await new Promise((resolve, reject) => {
+      server.listen(0, () => {
         const port = server.address().port;
         baseUrl = `http://127.0.0.1:${port}`;
         console.log(`📡 Test server đang chạy tại ${baseUrl}\n`);
         resolve();
       });
+      server.on('error', reject);
     });
 
     // ----------------------------------------------------
