@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 module.exports = (sequelize) => {
   class User extends Model {
     async comparePassword(candidatePassword) {
+      if (!this.password) return false;
       return bcrypt.compare(candidatePassword, this.password);
     }
 
@@ -39,7 +40,11 @@ module.exports = (sequelize) => {
       },
       password: {
         type: DataTypes.STRING(255),
-        allowNull: false
+        allowNull: true // Cho phép null đối với tài khoản đăng ký bằng Google
+      },
+      google_id: {
+        type: DataTypes.STRING(100),
+        allowNull: true
       },
       full_name: {
         type: DataTypes.STRING(100),
@@ -68,7 +73,7 @@ module.exports = (sequelize) => {
       tableName: 'users',
       hooks: {
         beforeSave: async (user) => {
-          if (user.changed('password')) {
+          if (user.changed('password') && user.password) {
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(user.password, salt);
           }

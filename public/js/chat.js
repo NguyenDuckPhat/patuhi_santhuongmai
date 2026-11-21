@@ -6,11 +6,6 @@ let chatAudioContext = null;
 let chatSoundEnabled = localStorage.getItem('chatSoundEnabled') === 'true';
 let chatSoundReady = false;
 
-// Quản lý phân trang tin nhắn
-let currentChatPage = 1;
-let hasMoreMessages = false;
-let isLoadingMore = false;
-
 document.addEventListener('DOMContentLoaded', async () => {
   updateChatSoundButton();
   const enableSoundAfterGesture = () => {
@@ -49,13 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (Number(conversationId) === Number(activeConversationId) && Number(readerId) !== Number(myUser.id)) {
         markMyMessagesAsRead();
       }
-    });
-    socket.on('message_recalled', ({ conversationId, messageId, content }) => {
-      if (Number(conversationId) === Number(activeConversationId)) {
-        applyMessageRecalled(messageId, content);
-      }
-      const lastMsgElem = document.getElementById(`conv-lastmsg-${conversationId}`);
-      if (lastMsgElem) lastMsgElem.innerText = content || 'Tin nhắn đã được thu hồi';
     });
   }
 
@@ -218,11 +206,8 @@ async function selectConversation(conversationId) {
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '<div class="text-center py-5 text-muted">Đang tải tin nhắn...</div>';
 
-  currentChatPage = 1;
-  hasMoreMessages = false;
-
   try {
-    const res = await fetch(`/api/chat/conversations/${conversationId}/messages?page=1&limit=20`, {
+    const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
       }
@@ -233,8 +218,7 @@ async function selectConversation(conversationId) {
       return;
     }
 
-    const { conversation, messages, pagination } = json.data;
-    hasMoreMessages = pagination?.hasMore || false;
+    const { conversation, messages } = json.data;
     const other = conversation.otherParty || {};
     const prod = conversation.product || {};
 
@@ -256,9 +240,6 @@ async function selectConversation(conversationId) {
     // Enable input
     document.getElementById('message-input').disabled = false;
     document.getElementById('btn-send-msg').disabled = false;
-    const btnAttach = document.getElementById('btn-attach-image');
-    if (btnAttach) btnAttach.disabled = false;
-    cancelImagePreview();
     document.getElementById('message-input').focus();
 
     // Render messages
@@ -269,17 +250,8 @@ async function selectConversation(conversationId) {
         </div>
       `;
     } else {
-      messagesContainer.innerHTML = `
-        <div id="load-more-container" class="text-center py-2 ${hasMoreMessages ? '' : 'd-none'}">
-          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-load-more" onclick="loadMoreMessages()">
-            <i class="bi bi-arrow-up-circle me-1"></i> Tải tin nhắn cũ hơn
-          </button>
-        </div>
-      `;
-      messages.forEach(m => {
-        const bubble = createMessageElement(m);
-        if (bubble) messagesContainer.appendChild(bubble);
-      });
+      messagesContainer.innerHTML = '';
+      messages.forEach(m => appendMessage(m));
       scrollToBottom();
     }
     refreshReadStatus(conversationId);
@@ -289,55 +261,11 @@ async function selectConversation(conversationId) {
   }
 }
 
-let selectedChatImage = null;
-
-function handleImageSelected(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    PatuhiApp.showToast('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WebP...)!', 'warning');
-    event.target.value = '';
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    PatuhiApp.showToast('Kích thước ảnh tối đa là 5MB!', 'warning');
-    event.target.value = '';
-    return;
-  }
-
-  selectedChatImage = file;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('image-preview').src = e.target.result;
-    document.getElementById('image-preview-name').textContent = file.name;
-    const previewContainer = document.getElementById('image-preview-container');
-    previewContainer.classList.remove('d-none');
-    previewContainer.classList.add('d-flex');
-  };
-  reader.readAsDataURL(file);
-}
-
-function cancelImagePreview() {
-  selectedChatImage = null;
-  const input = document.getElementById('chat-image-input');
-  if (input) input.value = '';
-  const previewContainer = document.getElementById('image-preview-container');
-  if (previewContainer) {
-    previewContainer.classList.add('d-none');
-    previewContainer.classList.remove('d-flex');
-  }
-  const previewImg = document.getElementById('image-preview');
-  if (previewImg) previewImg.src = '';
-  const previewName = document.getElementById('image-preview-name');
-  if (previewName) previewName.textContent = '';
-}
-
-function createMessageElement(message) {
+function appendMessage(message) {
+  const container = document.getElementById('messages-container');
   const isMine = message.sender_id === myUser.id;
   const messageId = Number(message.id);
-  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return null;
+  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
 
   const createdAt = message.created_at || message.createdAt || message.timestamp;
   const parsedDate = createdAt ? new Date(createdAt) : null;
@@ -345,209 +273,19 @@ function createMessageElement(message) {
     ? parsedDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
     : 'Vừa xong';
   const isRead = message.is_read === true || message.is_read === 1;
-
-  const imageHtml = message.image_url ? `
-    <div class="message-image mb-2">
-      <a href="${message.image_url}" target="_blank" rel="noopener noreferrer">
-        <img src="${message.image_url}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
-      </a>
-    </div>
-  ` : '';
-  const contentHtml = message.content ? `<div>${escapeHtml(message.content)}</div>` : '';
-
-  const bubble = document.createElement('div');
-  bubble.className = `msg-bubble ${isMine ? 'sent' : 'received'}${message.is_recalled ? ' recalled' : ''}`;
-  bubble.id = `message-${messageId}`;
-  bubble.innerHTML = `
-    ${imageHtml}
-    ${contentHtml}
-    <div class="msg-meta d-flex align-items-center text-muted small mt-1">
-      <span class="msg-time me-2">${timeLabel}</span>
-      ${isMine ? `<span class="message-read-status" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
-    </div>
-  `;
-
-  // Thêm nút Thu hồi nếu là tin của mình và chưa được thu hồi
-  if (isMine && !message.is_recalled) {
-    const recallBtn = document.createElement('button');
-    recallBtn.className = 'btn btn-sm btn-link text-decoration-none recall-btn';
-    recallBtn.dataset.messageId = messageId;
-    recallBtn.textContent = 'Thu hồi';
-    recallBtn.title = 'Thu hồi tin nhắn này';
-    recallBtn.style.marginLeft = '8px';
-    bubble.appendChild(recallBtn);
-  }
-
-  return bubble;
-}
-
-// Xử lý click vào nút Thu hồi (delegated)
-function setupRecallButtonHandler() {
-  document.addEventListener('click', async (e) => {
-    const target = e.target;
-    if (target && target.matches('.recall-btn')) {
-      const messageId = target.dataset.messageId;
-      if (!messageId) return;
-      if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
-      try {
-        const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages/${messageId}/recall`, {
-          method: 'PATCH',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
-        });
-        const json = await res.json();
-        if (res.ok) {
-          // UI sẽ được cập nhật qua socket 'message_recalled' hoặc ngay tại đây
-          applyMessageRecalled(messageId, json.data.message.content);
-        } else {
-          PatuhiApp.showToast(json.message || 'Không thể thu hồi tin nhắn.', 'danger');
-        }
-      } catch (err) {
-        PatuhiApp.showToast('Lỗi khi thu hồi tin nhắn.', 'danger');
-      }
-    }
-  });
-}
-
-// Cập nhật giao diện khi nhận socket event hoặc khi recall thành công
-function applyMessageRecalled(messageId, newContent) {
-  const msgElem = document.getElementById(`message-${messageId}`);
-  if (!msgElem) return;
-  // Đánh dấu đã thu hồi
-  msgElem.classList.add('recalled');
-  // Xóa nút recall nếu còn
-  const recallBtn = msgElem.querySelector('.recall-btn');
-  if (recallBtn) recallBtn.remove();
-  // Xóa ảnh nếu có
-  const imgDiv = msgElem.querySelector('.message-image');
-  if (imgDiv) imgDiv.remove();
-  // Cập nhật nội dung
-  const contentDiv = msgElem.querySelector('div'); // first div is content or image; we replace innerHTML
-  if (contentDiv) {
-    contentDiv.innerHTML = `<div>${escapeHtml(newContent)}</div>`;
-  } else {
-    // If no content element, create one
-    const newDiv = document.createElement('div');
-    newDiv.innerHTML = `<div>${escapeHtml(newContent)}</div>`;
-    msgElem.prepend(newDiv);
-  }
-}
-
-
-document.addEventListener('DOMContentLoaded', async () => {
-  // existing initialization code ... (will be earlier in file)
-  if (isMine && !message.is_recalled) {
-    const recallBtn = document.createElement('button');
-    recallBtn.className = 'btn btn-sm btn-link text-decoration-none recall-btn';
-    recallBtn.dataset.messageId = messageId;
-    recallBtn.textContent = 'Thu hồi';
-    recallBtn.title = 'Thu hồi tin nhắn này';
-    recallBtn.style.marginLeft = '8px';
-    bubble.appendChild(recallBtn);
-  }
-
-  return bubble;
-}
-  const isMine = message.sender_id === myUser.id;
-  const messageId = Number(message.id);
-  if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return null;
-
-  const createdAt = message.created_at || message.createdAt || message.timestamp;
-  const parsedDate = createdAt ? new Date(createdAt) : null;
-  const timeLabel = parsedDate && !Number.isNaN(parsedDate.getTime())
-    ? parsedDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-    : 'Vừa xong';
-  const isRead = message.is_read === true || message.is_read === 1;
-
-  const imageHtml = message.image_url ? `
-    <div class="message-image mb-2">
-      <a href="${message.image_url}" target="_blank" rel="noopener noreferrer">
-        <img src="${message.image_url}" class="rounded img-fluid border" style="max-height: 220px; max-width: 280px; object-fit: cover; cursor: pointer;" alt="Ảnh tin nhắn" loading="lazy">
-      </a>
-    </div>
-  ` : '';
-
-  const contentHtml = message.content ? `<div>${escapeHtml(message.content)}</div>` : '';
 
   const div = document.createElement('div');
   div.className = `msg-bubble ${isMine ? 'sent' : 'received'}`;
   if (Number.isFinite(messageId)) div.id = `message-${messageId}`;
   div.innerHTML = `
-    ${imageHtml}
-    ${contentHtml}
+    <div>${escapeHtml(message.content)}</div>
     <div class="text-end" style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
       ${timeLabel}
       ${isMine ? `<span class="message-read-status ms-1" data-message-id="${messageId}" data-message-read="${isRead}">${isRead ? 'Đã xem' : 'Chưa xem'}</span>` : ''}
     </div>
   `;
-  return div;
-}
-
-function appendMessage(message) {
-  const container = document.getElementById('messages-container');
-  const bubble = createMessageElement(message);
-  if (bubble) {
-    container.appendChild(bubble);
-    scrollToBottom();
-  }
-}
-
-async function loadMoreMessages() {
-  if (isLoadingMore || !hasMoreMessages || !activeConversationId) return;
-
-  const btn = document.getElementById('btn-load-more');
-  const originalText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang tải...';
-  }
-  isLoadingMore = true;
-
-  try {
-    const nextPage = currentChatPage + 1;
-    const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages?page=${nextPage}&limit=20`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
-    });
-    const json = await res.json();
-    if (res.ok) {
-      currentChatPage = nextPage;
-      const { messages, pagination } = json.data;
-      hasMoreMessages = pagination?.hasMore || false;
-
-      const container = document.getElementById('messages-container');
-      const prevScrollHeight = container.scrollHeight;
-
-      // Chèn các tin nhắn cũ lên đầu danh sách (dưới nút load more)
-      const loadMoreContainer = document.getElementById('load-more-container');
-      // Duyệt ngược để giữ thứ tự từ cũ đến mới khi chèn sau loadMoreContainer
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const bubble = createMessageElement(messages[i]);
-        if (bubble) {
-          if (loadMoreContainer && loadMoreContainer.nextSibling) {
-            container.insertBefore(bubble, loadMoreContainer.nextSibling);
-          } else {
-            container.prepend(bubble);
-          }
-        }
-      }
-
-      // Giữ nguyên vị trí cuộn của người dùng sau khi tải thêm tin cũ
-      container.scrollTop = container.scrollHeight - prevScrollHeight;
-
-      if (!hasMoreMessages && loadMoreContainer) {
-        loadMoreContainer.classList.add('d-none');
-      }
-    }
-  } catch (err) {
-    PatuhiApp.showToast('Lỗi khi tải thêm tin nhắn.', 'danger');
-  } finally {
-    isLoadingMore = false;
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-  }
+  container.appendChild(div);
+  scrollToBottom();
 }
 
 function markMyMessagesAsRead() {
@@ -595,45 +333,26 @@ async function handleSendMessage(e) {
   e.preventDefault();
   const input = document.getElementById('message-input');
   const content = input.value.trim();
-  if ((!content && !selectedChatImage) || !activeConversationId) return;
+  if (!content || !activeConversationId) return;
 
-  const imageToSend = selectedChatImage;
   input.value = '';
-  cancelImagePreview();
 
   try {
-    let res;
-    if (imageToSend) {
-      const formData = new FormData();
-      if (content) formData.append('content', content);
-      formData.append('image', imageToSend);
-
-      res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: formData
-      });
-    } else {
-      res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content })
-      });
-    }
-
+    const res = await fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content })
+    });
     const json = await res.json();
     if (res.ok) {
       // Nếu socket chưa kết nối, tự thêm thủ công
       if (!socket || !socket.connected) {
         appendMessage(json.data.message);
       }
-      const displayLast = content || '[Hình ảnh]';
-      updateConversationLastMessage(activeConversationId, displayLast);
+      updateConversationLastMessage(activeConversationId, content);
     } else {
       PatuhiApp.showToast(json.message, 'danger');
     }

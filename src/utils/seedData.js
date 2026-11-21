@@ -1,5 +1,7 @@
 const { getSequelize, testAndConnectDB } = require('../config/database');
 const initModels = require('../models');
+const ensureProductMetadataColumns = require('./ensureProductMetadataColumns');
+const ensureUserMetadataColumns = require('./ensureUserMetadataColumns');
 
 const seedData = async () => {
   try {
@@ -7,6 +9,8 @@ const seedData = async () => {
     const { User, Category, Product, ProductImage } = initModels(sequelize);
 
     await sequelize.sync({ force: false });
+    await ensureProductMetadataColumns(sequelize);
+    await ensureUserMetadataColumns(sequelize);
     console.log('📦 Database synced!');
 
     // 1. Tạo Danh Mục Sản Phẩm Mặc Định

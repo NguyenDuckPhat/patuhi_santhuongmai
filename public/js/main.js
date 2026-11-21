@@ -5,9 +5,23 @@ const PatuhiApp = {
 
   // Khởi tạo kiểm tra đăng nhập
   async init() {
+    // Kiểm tra token từ Google OAuth redirect callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    if (tokenFromUrl) {
+      localStorage.setItem('token', tokenFromUrl);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     await this.checkAuth();
     this.renderNavbar();
     this.updateNotificationCount();
+
+    if (urlParams.get('login') === 'google_success') {
+      setTimeout(() => {
+        this.showToast('Đăng nhập bằng tài khoản Google thành công!', 'success');
+      }, 300);
+    }
   },
 
   // Lấy thông tin user hiện tại từ token cookie/localStorage

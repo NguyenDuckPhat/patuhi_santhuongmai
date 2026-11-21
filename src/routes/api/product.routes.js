@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../../controllers/productController');
-const commentController = require('../../controllers/commentController');
 const { authenticate, optionalAuth, authorize } = require('../../middlewares/auth');
 const { uploadProductImages } = require('../../middlewares/upload');
 const { productRules, validate } = require('../../middlewares/validator');
@@ -42,9 +41,5 @@ router.patch(
   authorize('member', 'admin'),
   productController.updateProductStatus
 );
-
-// Bình luận sản phẩm: khách xem được bình luận đã duyệt, thành viên mới được gửi
-router.get('/:id/comments', optionalAuth, commentController.listComments);
-router.post('/:id/comments', authenticate, authorize('member', 'admin'), commentController.createComment);
 
 module.exports = router;

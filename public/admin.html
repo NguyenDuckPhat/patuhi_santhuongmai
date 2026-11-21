@@ -118,11 +118,6 @@
           <i class="bi bi-flag-fill me-1"></i> Xử Lý Báo Cáo Vi Phạm
         </button>
       </li>
-      <li class="nav-item">
-        <button class="nav-link fw-semibold" id="tab-btn-comments" onclick="switchAdminTab('comments')">
-          <i class="bi bi-chat-dots-fill me-1"></i> Quản Lý Bình Luận (<span id="badge-pending-comments">0</span>)
-        </button>
-      </li>
     </ul>
 
     <!-- Tab 1: Duyệt Tin Đăng (Requirement 27) -->
@@ -195,57 +190,6 @@
         <div class="text-center py-4 text-muted">Đang tải báo cáo...</div>
       </div>
     </div>
-
-    <!-- Tab 5: Quản Lý Bình Luận Sản Phẩm -->
-    <div id="admin-tab-comments" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0">Quản lý bình luận sản phẩm</h5>
-        <select id="comment-status-filter" class="form-select form-select-sm w-auto" onchange="loadAdminComments()">
-          <option value="PENDING" selected>Chờ duyệt (Pending)</option>
-          <option value="APPROVED">Đã duyệt (Approved)</option>
-          <option value="REJECTED">Bị từ chối (Rejected)</option>
-          <option value="all">Tất cả bình luận</option>
-        </select>
-      </div>
-
-      <!-- Thống kê bình luận -->
-      <div class="row g-2 mb-3">
-        <div class="col-6 col-lg-3">
-          <div class="border rounded-3 bg-light p-3 h-100">
-            <span class="text-muted small fw-semibold text-uppercase">Tổng bình luận</span>
-            <h4 class="fw-bold mb-0 text-dark" id="stat-total-comments">--</h4>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="border rounded-3 bg-warning-subtle p-3 h-100">
-            <span class="text-muted small fw-semibold text-uppercase">Chờ duyệt</span>
-            <h4 class="fw-bold mb-0 text-warning" id="stat-pending-comments">--</h4>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="border rounded-3 bg-success-subtle p-3 h-100">
-            <span class="text-muted small fw-semibold text-uppercase">Đã duyệt</span>
-            <h4 class="fw-bold mb-0 text-success" id="stat-approved-comments">--</h4>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="border rounded-3 bg-danger-subtle p-3 h-100">
-            <span class="text-muted small fw-semibold text-uppercase">Bị từ chối</span>
-            <h4 class="fw-bold mb-0 text-danger" id="stat-rejected-comments">--</h4>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-2 mb-3 align-items-center">
-        <div class="col-md-6">
-          <input type="text" id="admin-search-comment" class="form-control" placeholder="Tìm theo tên sản phẩm, tên người dùng, nội dung..." oninput="scheduleCommentReload()">
-        </div>
-      </div>
-
-      <div id="admin-comments-container">
-        <div class="text-center py-4 text-muted">Đang tải bình luận...</div>
-      </div>
-    </div>
   </div>
 
   <!-- Modal Tạo/Sửa Danh Mục -->
@@ -299,40 +243,6 @@
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
             <button type="button" class="btn btn-danger rounded-pill px-4" onclick="confirmRejectProduct()">Xác nhận từ chối</button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Xem Chi Tiết Bình Luận -->
-  <div class="modal fade" id="commentDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 shadow">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold"><i class="bi bi-chat-square-text text-warning me-2"></i>Chi tiết bình luận</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <img id="comment-detail-avatar" src="" class="rounded-circle" width="48" height="48" style="object-fit:cover;" alt="Avatar">
-            <div>
-              <div class="fw-bold" id="comment-detail-name"></div>
-              <div class="text-muted small" id="comment-detail-username"></div>
-            </div>
-          </div>
-          <dl class="row small mb-3">
-            <dt class="col-sm-3 text-muted">Sản phẩm</dt>
-            <dd class="col-sm-9"><a id="comment-detail-product" href="#" target="_blank" class="text-decoration-none"></a></dd>
-            <dt class="col-sm-3 text-muted">Thời gian gửi</dt>
-            <dd class="col-sm-9" id="comment-detail-time"></dd>
-            <dt class="col-sm-3 text-muted">Trạng thái</dt>
-            <dd class="col-sm-9"><span class="badge" id="comment-detail-status"></span></dd>
-          </dl>
-          <label class="form-label fw-semibold">Nội dung bình luận</label>
-          <div class="border rounded-3 bg-light p-3" id="comment-detail-content" style="white-space: pre-wrap; word-break: break-word;"></div>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
         </div>
       </div>
     </div>

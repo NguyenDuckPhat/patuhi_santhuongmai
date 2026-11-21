@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-  <div class="container py-4" style="max-width: 440px;">
+  <div class="container py-4" style="max-width: 450px;">
     <div class="text-center mb-4">
       <a class="navbar-brand d-inline-flex align-items-center gap-2 text-decoration-none" href="/">
         <i class="bi bi-shop-window text-warning fs-2"></i>
@@ -22,6 +22,24 @@
       <h4 class="fw-bold mb-4 text-center">Đăng Nhập</h4>
 
       <div id="login-alert" class="alert alert-danger d-none" role="alert"></div>
+
+      <!-- Đăng nhập trực tiếp bằng Google OAuth 2.0 -->
+      <div class="mb-3">
+        <a href="/api/auth/google/url" class="btn btn-white border w-100 py-2 rounded-pill fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 text-decoration-none text-dark hover-shadow" id="btn-google-login">
+          <svg width="20" height="20" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+          </svg>
+          <span>Đăng nhập với Google</span>
+        </a>
+      </div>
+
+      <div class="position-relative my-4 text-center">
+        <hr class="text-muted">
+        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">hoặc tài khoản mật khẩu</span>
+      </div>
 
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="mb-3">
@@ -49,18 +67,30 @@
         Chưa có tài khoản? <a href="/register" class="text-warning fw-bold text-decoration-none">Đăng ký ngay</a>
       </div>
 
-      <!-- <div class="mt-4 p-3 bg-light rounded-3 small text-muted">
-        <strong>Tài khoản mẫu:</strong><br>
+      <div class="mt-4 p-3 bg-light rounded-3 small text-muted">
+        <strong>Tài khoản có sẵn:</strong><br>
         • Quản trị viên: <code>admin</code> / <code>Admin123@password</code><br>
         • Thành viên: <code>nguyenvana</code> / <code>Password123@</code>
-      </div> -->
-
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/main.js"></script>
   <script>
+    // Kiểm tra thông báo lỗi từ callback Google (nếu có)
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorMsg = urlParams.get('error');
+      if (errorMsg) {
+        const alertBox = document.getElementById('login-alert');
+        if (alertBox) {
+          alertBox.innerText = decodeURIComponent(errorMsg);
+          alertBox.classList.remove('d-none');
+        }
+      }
+    });
+
     async function handleLogin(e) {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();

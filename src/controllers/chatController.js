@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const { Op } = require('sequelize');
 const { getSequelize } = require('../config/database');
 const initModels = require('../models');
@@ -216,18 +214,7 @@ const getMessages = async (req, res) => {
     }
 
     // Load after marking read so the viewer receives the current receipt state.
-    const totalMessages = await Message.count({ where: { conversation_id: conversationId } });
-
-    const limitQuery = req.query.limit !== undefined ? parseInt(req.query.limit, 10) : 30;
-    const pageQuery = req.query.page !== undefined ? parseInt(req.query.page, 10) : 1;
-    const validLimit = Math.max(1, isNaN(limitQuery) ? 30 : limitQuery);
-    const validPage = Math.max(1, isNaN(pageQuery) ? 1 : pageQuery);
-    const offset = req.query.offset !== undefined 
-      ? Math.max(0, parseInt(req.query.offset, 10)) 
-      : (validPage - 1) * validLimit;
-
-    // Lấy tin nhắn theo thứ tự mới nhất trước để phục vụ phân trang
-    const rawMessages = await Message.findAll({
+    const messages = await Message.findAll({
       where: { conversation_id: conversationId },
       include: [
         {
@@ -236,13 +223,8 @@ const getMessages = async (req, res) => {
           attributes: ['id', 'username', 'full_name', 'avatar']
         }
       ],
-      order: [['created_at', 'DESC']],
-      limit: validLimit,
-      offset
+      order: [['created_at', 'ASC']]
     });
-
-    // Đảo ngược lại để hiển thị từ cũ đến mới (trên xuống dưới)
-    const messages = rawMessages.reverse();
 
     const convData = conversation.toJSON();
     convData.otherParty = convData.buyer_id === userId ? convData.seller : convData.buyer;
@@ -251,14 +233,7 @@ const getMessages = async (req, res) => {
       success: true,
       data: {
         conversation: convData,
-        messages,
-        pagination: {
-          total: totalMessages,
-          page: validPage,
-          limit: validLimit,
-          totalPages: Math.ceil(totalMessages / validLimit),
-          hasMore: offset + rawMessages.length < totalMessages
-        }
+        messages
       }
     });
   } catch (error) {
@@ -271,7 +246,7 @@ const getMessages = async (req, res) => {
   }
 };
 
-// 4. Gửi tin nhắn mới (hỗ trợ văn bản và hình ảnh)
+// 4. Gửi tin nhắn mới
 const sendMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -279,13 +254,10 @@ const sendMessage = async (req, res) => {
     const { Conversation, Message, User } = getModels();
     const userId = req.user.id;
 
-    const hasText = content && typeof content === 'string' && content.trim().length > 0;
-    const hasImage = !!req.file;
-
-    if (!hasText && !hasImage) {
+    if (!content || !content.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Nội dung tin nhắn hoặc hình ảnh không được để trống.'
+        message: 'Nội dung tin nhắn không được để trống.'
       });
     }
 
@@ -297,29 +269,21 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    if (conversation.buyer_id !== userId && conversation.seller_id !== userId && req.user.role !== 'admin') {
+    if (conversation.buyer_id !== userId && conversation.seller_id !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Bạn không thuộc cuộc trò chuyện này.'
       });
     }
 
-    const textContent = hasText ? content.trim() : '';
-    const imageUrl = hasImage ? `/uploads/chats/${req.file.filename}` : null;
-
     const newMessage = await Message.create({
       conversation_id: parseInt(conversationId),
       sender_id: userId,
-      content: textContent,
-      image_url: imageUrl
+      content: content.trim()
     });
 
     // Cập nhật last_message của cuộc hội thoại
-    let lastMsgText = textContent || '[Hình ảnh]';
-    if (hasImage && hasText) {
-      lastMsgText = `[Hình ảnh] ${textContent}`;
-    }
-    conversation.last_message = lastMsgText;
+    conversation.last_message = content.trim();
     conversation.last_message_at = new Date();
     await conversation.save();
 
@@ -356,104 +320,10 @@ const sendMessage = async (req, res) => {
   }
 };
 
-// 5. Thu hồi / Xóa tin nhắn đã gửi
-const recallMessage = async (req, res) => {
-  try {
-    const { conversationId, messageId } = req.params;
-    const { Message, Conversation } = getModels();
-    const userId = req.user.id;
-
-    const message = await Message.findOne({
-      where: {
-        id: messageId,
-        conversation_id: conversationId
-      }
-    });
-
-    if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy tin nhắn cần thu hồi.'
-      });
-    }
-
-    // Kiểm tra quyền: Chỉ người gửi hoặc Quản trị viên mới được thu hồi
-    if (message.sender_id !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền thu hồi tin nhắn này.'
-      });
-    }
-
-    if (message.is_recalled) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tin nhắn này đã được thu hồi trước đó.'
-      });
-    }
-
-    // Nếu có ảnh đính kèm, dọn dẹp file vật lý
-    if (message.image_url) {
-      const filePath = path.join(__dirname, '../../public', message.image_url);
-      if (fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (e) {
-          console.error('Lỗi xóa file ảnh tin nhắn thu hồi:', e.message);
-        }
-      }
-      message.image_url = null;
-    }
-
-    message.is_recalled = true;
-    message.content = 'Tin nhắn đã được thu hồi';
-    await message.save();
-
-    // Cập nhật lại last_message của cuộc hội thoại nếu tin bị thu hồi là tin mới nhất
-    const conversation = await Conversation.findByPk(conversationId);
-    if (conversation) {
-      const latestMsg = await Message.findOne({
-        where: { conversation_id: conversationId },
-        order: [['created_at', 'DESC']]
-      });
-      if (latestMsg && latestMsg.id === message.id) {
-        conversation.last_message = 'Tin nhắn đã được thu hồi';
-        await conversation.save();
-      }
-    }
-
-    // Phát sự kiện Socket.io Real-time tới các thành viên trong room
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`conversation_${conversationId}`).emit('message_recalled', {
-        conversationId: Number(conversationId),
-        messageId: Number(message.id),
-        content: 'Tin nhắn đã được thu hồi'
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Thu hồi tin nhắn thành công!',
-      data: {
-        message
-      }
-    });
-  } catch (error) {
-    console.error('Lỗi thu hồi tin nhắn:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Không thể thu hồi tin nhắn lúc này.',
-      error: error.message
-    });
-  }
-};
-
 module.exports = {
   getConversations,
   getOrCreateConversation,
   getReadStatus,
   getMessages,
-  sendMessage,
-  recallMessage
+  sendMessage
 };
