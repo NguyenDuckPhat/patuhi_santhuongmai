@@ -70,7 +70,7 @@ const createComment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'ID sản phẩm không hợp lệ.' });
     }
 
-    const { Comment, Product } = getModels();
+    const { Comment, Product, Order } = getModels();
     const product = await Product.findByPk(productId, { attributes: ['id', 'status', 'user_id'] });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm này.' });
@@ -102,9 +102,45 @@ const createComment = async (req, res) => {
       rating = inputRating;
     }
 
+    // Đánh giá từ đơn hàng: chỉ khi có order_id hợp lệ và có điểm sao.
+    // Không truyền order_id thì vẫn là bình luận sản phẩm bình thường như cũ.
+    let linkedOrder = null;
+    const rawOrderId = req.body && req.body.order_id;
+    if (rawOrderId != null && rawOrderId !== '') {
+      const orderId = Number(rawOrderId);
+      if (!Number.isInteger(orderId) || orderId <= 0) {
+        return res.status(400).json({ success: false, message: 'Mã đơn hàng đánh giá không hợp lệ.' });
+      }
+
+      linkedOrder = await Order.findOne({
+        where: { id: orderId, buyer_id: req.user.id, status: 'completed' }
+      });
+      if (!linkedOrder) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn chỉ có thể đánh giá đơn hàng đã hoàn thành của chính mình.'
+        });
+      }
+      if (linkedOrder.product_id && Number(linkedOrder.product_id) !== productId) {
+        return res.status(400).json({ success: false, message: 'Đơn hàng này không khớp với sản phẩm đang đánh giá.' });
+      }
+      if (rating === null) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn điểm đánh giá trước khi gửi.' });
+      }
+
+      const alreadyRated = await Comment.findOne({
+        where: { order_id: orderId },
+        attributes: ['id']
+      });
+      if (alreadyRated) {
+        return res.status(400).json({ success: false, message: 'Đơn hàng này đã được đánh giá.' });
+      }
+    }
+
     const comment = await Comment.create({
       product_id: productId,
       user_id: req.user.id,
+      order_id: linkedOrder ? linkedOrder.id : null,
       content,
       rating,
       status: 'PENDING'
@@ -116,6 +152,7 @@ const createComment = async (req, res) => {
       data: {
         comment: {
           id: comment.id,
+          order_id: comment.order_id,
           status: comment.status,
           created_at: comment.created_at
         }

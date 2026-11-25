@@ -1188,3 +1188,214 @@ body.temp-orders-open {
   .temp-orders-body { padding: 1rem; }
   .temp-order-thumb-lg { width: 80px; height: 80px; flex-basis: 80px; }
 }
+
+/* ==========================================
+   ĐƠN HÀNG THẬT (PROFILE / PRODUCT DETAIL)
+   ========================================== */
+
+.min-width-0 { min-width: 0; }
+
+.order-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.order-filter-bar select,
+.order-filter-bar input {
+  width: auto;
+}
+
+.order-filter-bar select { min-width: 175px; }
+.order-filter-bar input { min-width: 190px; }
+
+.order-row-thumb {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+  object-fit: cover;
+}
+
+.order-detail-thumb {
+  width: 80px;
+  height: 80px;
+  flex-basis: 80px;
+  object-fit: cover;
+}
+
+.order-detail-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.order-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.order-progress::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 8%;
+  right: 8%;
+  height: 3px;
+  background: #e9ecef;
+  z-index: 0;
+}
+
+.order-progress-step {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+
+.order-progress-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #e9ecef;
+  color: #6c757d;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px #dee2e6;
+}
+
+.order-progress-step.done .order-progress-dot {
+  background: #198754;
+  color: #fff;
+  box-shadow: 0 0 0 1px #198754;
+}
+
+.order-progress-step.active .order-progress-dot {
+  background: #ffc107;
+  color: #212529;
+  box-shadow: 0 0 0 1px #ffc107;
+}
+
+.order-progress-label {
+  font-size: 0.78rem;
+  color: #6c757d;
+  line-height: 1.25;
+}
+
+.order-progress-step.done .order-progress-label {
+  color: #198754;
+}
+
+.order-progress-step.active .order-progress-label {
+  color: #b8860b;
+  font-weight: 700;
+}
+
+.order-timeline {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.order-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.order-timeline-item {
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.order-timeline-item:last-child { padding-bottom: 0; }
+
+.order-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.05rem;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffc107;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* 4 ô tổng quan đơn mua */
+.buyer-order-tiles { --bs-gutter-y: 0.5rem; }
+
+.buyer-order-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.25rem;
+  border-radius: 14px !important;
+  color: #212529;
+  text-decoration: none;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+
+.buyer-order-tile:hover,
+.buyer-order-tile:focus-visible {
+  background: #fff8e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  outline: none;
+}
+
+.buyer-order-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  font-size: 1.9rem;
+  color: #000;
+}
+
+.buyer-order-icon .badge {
+  position: absolute;
+  top: -4px;
+  right: -12px;
+  min-width: 22px;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.buyer-order-label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+@media (max-width: 575.98px) {
+  .order-progress-label { font-size: 0.68rem; }
+  .order-progress-dot { width: 30px; height: 30px; }
+  .order-filter-bar select,
+  .order-filter-bar input { width: 100%; }
+  .order-row-thumb { width: 40px; height: 40px; flex-basis: 40px; }
+  .order-detail-thumb { width: 64px; height: 64px; flex-basis: 64px; }
+  .buyer-order-icon { width: 48px; height: 48px; font-size: 1.6rem; }
+  .buyer-order-label { font-size: 0.78rem; }
+}

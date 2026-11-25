@@ -130,12 +130,14 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `product_id` INT NOT NULL,
   `user_id` INT NOT NULL,
+  `order_id` INT NULL,
   `content` TEXT NOT NULL,
   `rating` INT NULL,
   `status` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY `idx_comments_product_status` (`product_id`, `status`),
+  KEY `idx_comments_order` (`order_id`),
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -146,4 +148,47 @@ CREATE TABLE IF NOT EXISTS `seller_follows` (
   PRIMARY KEY (`seller_id`, `follower_id`),
   FOREIGN KEY (`seller_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`follower_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. BẢNG ĐƠN HÀNG THẬT (orders)
+-- product_id/seller_id dùng SET NULL để giữ lịch sử khi xóa tin/user.
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `order_code` VARCHAR(30) NOT NULL UNIQUE,
+  `buyer_id` INT NOT NULL,
+  `seller_id` INT NULL,
+  `product_id` INT NULL,
+  `product_title` VARCHAR(255) NOT NULL,
+  `product_image` VARCHAR(255) NULL,
+  `seller_name` VARCHAR(100) NULL,
+  `quantity` INT NOT NULL,
+  `unit_price` DECIMAL(15, 2) NOT NULL,
+  `total_amount` DECIMAL(15, 2) NOT NULL,
+  `receiver_name` VARCHAR(100) NOT NULL,
+  `receiver_phone` VARCHAR(20) NOT NULL,
+  `shipping_address` VARCHAR(300) NOT NULL,
+  `note` VARCHAR(300) NULL,
+  `status` ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_orders_buyer` (`buyer_id`, `created_at`),
+  KEY `idx_orders_seller` (`seller_id`, `created_at`),
+  KEY `idx_orders_status` (`status`),
+  FOREIGN KEY (`buyer_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`seller_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. LỊCH SỬ TRẠNG THÁI ĐƠN HÀNG
+CREATE TABLE IF NOT EXISTS `order_status_history` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `order_id` INT NOT NULL,
+  `from_status` ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NULL,
+  `to_status` ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NOT NULL,
+  `changed_by` INT NULL,
+  `changed_by_role` ENUM('buyer', 'seller', 'system') NULL,
+  `note` VARCHAR(255) NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`changed_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

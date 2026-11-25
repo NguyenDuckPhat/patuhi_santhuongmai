@@ -10,4 +10,11 @@ module.exports = async (sequelize) => {
   if (!comments.rating) {
     await queryInterface.addColumn('comments', 'rating', { type: DataTypes.INTEGER });
   }
+  if (!comments.order_id) {
+    await queryInterface.addColumn('comments', 'order_id', {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    });
+    await queryInterface.addIndex('comments', ['order_id'], { name: 'idx_comments_order' }).catch(() => {});
+  }
 };

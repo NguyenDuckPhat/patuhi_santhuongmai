@@ -14,6 +14,8 @@ const initModels = (sequelizeInstance) => {
   const Report = require('./Report')(sequelize);
   const Comment = require('./Comment')(sequelize);
   const SellerFollow = require('./SellerFollow')(sequelize);
+  const Order = require('./Order')(sequelize);
+  const OrderStatusHistory = require('./OrderStatusHistory')(sequelize);
 
   // Quan hệ User - Product
   User.hasMany(Product, { foreignKey: 'user_id', as: 'products', onDelete: 'CASCADE' });
@@ -74,6 +76,26 @@ const initModels = (sequelizeInstance) => {
   Product.hasMany(Comment, { foreignKey: 'product_id', as: 'comments', onDelete: 'CASCADE' });
   Comment.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
+  // Đánh giá gắn với đơn hàng đã mua (null với bình luận thường).
+  Order.hasMany(Comment, { foreignKey: 'order_id', as: 'reviews', onDelete: 'SET NULL' });
+  Comment.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+
+  // Quan hệ Order - User - Product
+  // SET NULL để giữ lịch sử đơn khi tin đăng/user bị xóa.
+  User.hasMany(Order, { foreignKey: 'buyer_id', as: 'buyerOrders', onDelete: 'RESTRICT' });
+  User.hasMany(Order, { foreignKey: 'seller_id', as: 'sellerOrders', onDelete: 'SET NULL' });
+  Order.belongsTo(User, { foreignKey: 'buyer_id', as: 'buyer' });
+  Order.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
+
+  Product.hasMany(Order, { foreignKey: 'product_id', as: 'orders', onDelete: 'SET NULL' });
+  Order.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+  // Lịch sử trạng thái đơn hàng
+  Order.hasMany(OrderStatusHistory, { foreignKey: 'order_id', as: 'statusHistory', onDelete: 'CASCADE' });
+  OrderStatusHistory.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+  User.hasMany(OrderStatusHistory, { foreignKey: 'changed_by', as: 'orderStatusChanges', onDelete: 'SET NULL' });
+  OrderStatusHistory.belongsTo(User, { foreignKey: 'changed_by', as: 'changedBy' });
+
   return {
     sequelize,
     User,
@@ -85,7 +107,9 @@ const initModels = (sequelizeInstance) => {
     Message,
     Report,
     Comment,
-    SellerFollow
+    SellerFollow,
+    Order,
+    OrderStatusHistory
   };
 };
 

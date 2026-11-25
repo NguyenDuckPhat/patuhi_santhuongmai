@@ -64,9 +64,8 @@ const PatuhiApp = {
       const isAdmin = this.currentUser.role === 'admin';
       navAuthContainer.innerHTML = `
         <div class="d-flex align-items-center gap-2 gap-md-3">
-          <a href="javascript:void(0)" class="temp-order-nav-link fw-semibold" onclick="PatuhiApp.openTempOrders()" title="Đặt đơn">
-            Đặt đơn
-            <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
+          <a href="/profile?tab=buy-orders" class="temp-order-nav-link fw-semibold" title="Đơn hàng của tôi">
+            Đơn hàng của tôi
           </a>
           <a href="/favorites" class="btn btn-outline-secondary position-relative" title="Tin yêu thích">
             <i class="bi bi-heart"></i>
@@ -92,6 +91,8 @@ const PatuhiApp = {
               <li><a class="dropdown-item py-2" href="/profile"><i class="bi bi-person me-2 text-primary"></i>Trang cá nhân & Tin đăng</a></li>
               <li><a class="dropdown-item py-2" href="/favorites"><i class="bi bi-heart me-2 text-danger"></i>Danh sách yêu thích</a></li>
               <li><a class="dropdown-item py-2" href="/my-reports"><i class="bi bi-flag me-2 text-warning"></i>Lịch sử báo cáo tin</a></li>
+              <li><a class="dropdown-item py-2" href="/profile?tab=buy-orders"><i class="bi bi-bag-check me-2 text-success"></i>Đơn hàng của tôi</a></li>
+              <li><a class="dropdown-item py-2" href="/profile?tab=sell-orders"><i class="bi bi-box-seam me-2 text-warning"></i>Quản lý đơn hàng</a></li>
               ${isAdmin ? `<li><hr class="dropdown-divider my-1"></li><li><a class="dropdown-item py-2 text-danger fw-bold" href="/admin"><i class="bi bi-shield-check me-2"></i>Bảng Quản Trị Admin</a></li>` : ''}
               <li><hr class="dropdown-divider my-1"></li>
               <li><button class="dropdown-item py-2 text-danger" onclick="PatuhiApp.logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>
@@ -198,12 +199,14 @@ const PatuhiApp = {
               <h6 class="footer-col-title text-white fw-bold mb-3">Về Patuhi</h6>
               <ul class="footer-links list-unstyled small mb-0">
                 <li><a href="/"><i class="bi bi-chevron-right"></i> Trang chủ</a></li>
-                <li>
-                  <button type="button" class="footer-link-btn" onclick="PatuhiApp.openTempOrders()">
-                    <i class="bi bi-chevron-right"></i> Đơn đặt
-                    <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
-                  </button>
-                </li>
+                ${this.currentUser
+                  ? `<li><a href="/profile?tab=buy-orders"><i class="bi bi-chevron-right"></i> Đơn hàng của tôi</a></li>`
+                  : `<li>
+                       <button type="button" class="footer-link-btn" onclick="PatuhiApp.openTempOrders()">
+                         <i class="bi bi-chevron-right"></i> Đặt đơn
+                         <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
+                       </button>
+                     </li>`}
                 <li><a href="/#categories-grid"><i class="bi bi-chevron-right"></i> Danh mục sản phẩm</a></li>
                 <li><a href="/post"><i class="bi bi-chevron-right"></i> Đăng tin mua bán</a></li>
                 <li><a href="/my-reports"><i class="bi bi-chevron-right"></i> Báo cáo vi phạm</a></li>
@@ -555,6 +558,18 @@ const PatuhiApp = {
 
     card.appendChild(cardBody);
     body.appendChild(card);
+  },
+
+  // Nhãn trạng thái đơn hàng thật (đồng bộ với backend)
+  orderStatusLabel(status) {
+    const labels = {
+      pending: 'Chờ xác nhận',
+      confirmed: 'Đã xác nhận',
+      shipping: 'Đang giao hàng',
+      completed: 'Đã hoàn thành',
+      cancelled: 'Đã hủy'
+    };
+    return labels[status] || status || 'Không rõ';
   },
 
   // Định dạng giá tiền VND

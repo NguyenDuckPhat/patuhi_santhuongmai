@@ -18,6 +18,12 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Liên kết với đơn hàng đã mua để tính số đơn "chưa đánh giá".
+      // Null với bình luận thông thường trên trang sản phẩm.
+      order_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
       content: {
         type: DataTypes.TEXT,
         allowNull: false,

@@ -9,6 +9,7 @@ const favoriteRoutes = require('./favorite.routes');
 const chatRoutes = require('./chat.routes');
 const reportRoutes = require('./report.routes');
 const adminRoutes = require('./admin.routes');
+const orderRoutes = require('./order.routes');
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -18,6 +19,7 @@ router.use('/favorites', favoriteRoutes);
 router.use('/chat', chatRoutes);
 router.use('/reports', reportRoutes);
 router.use('/admin', adminRoutes);
+router.use('/orders', orderRoutes);
 
 // Thông tin API & Healthcheck
 router.get('/health', (req, res) => {

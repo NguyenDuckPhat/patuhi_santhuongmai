@@ -44,6 +44,12 @@
           <button class="list-group-item list-group-item-action active py-3 fw-semibold border-0" id="tab-btn-listings" onclick="switchTab('listings')">
             <i class="bi bi-grid me-2"></i> Quản lý tin đăng của tôi
           </button>
+          <button class="list-group-item list-group-item-action py-3 fw-semibold border-0" id="tab-btn-buy-orders" onclick="switchTab('buy-orders')">
+            <i class="bi bi-bag-check me-2"></i> Đơn hàng của tôi
+          </button>
+          <button class="list-group-item list-group-item-action py-3 fw-semibold border-0" id="tab-btn-sell-orders" onclick="switchTab('sell-orders')">
+            <i class="bi bi-box-seam me-2"></i> Quản lý đơn hàng
+          </button>
           <button class="list-group-item list-group-item-action py-3 fw-semibold border-0" id="tab-btn-info" onclick="switchTab('info')">
             <i class="bi bi-person-gear me-2"></i> Cập nhật thông tin cá nhân
           </button>
@@ -55,6 +61,60 @@
 
       <!-- Right: Tab Content -->
       <div class="col-lg-8">
+        <!-- Tổng quan đơn mua của người dùng hiện tại -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" id="buyer-order-overview">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-bag-check text-warning me-2"></i>Đơn mua</h5>
+            <a href="/profile?tab=buy-orders" class="small fw-semibold text-decoration-none text-primary"
+               onclick="event.preventDefault(); openBuyerOrdersWithStatus('');">
+              Xem lịch sử mua hàng <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+
+          <div class="row g-2 buyer-order-tiles text-center">
+            <div class="col-6 col-md-3">
+              <button type="button" class="buyer-order-tile w-100 h-100 border-0 bg-transparent"
+                      onclick="openBuyerOrdersWithStatus('pending')">
+                <span class="buyer-order-icon">
+                  <i class="bi bi-wallet2" aria-hidden="true"></i>
+                  <span class="badge rounded-pill bg-warning text-dark" id="buy-order-count-pending">...</span>
+                </span>
+                <span class="buyer-order-label">Chờ xác nhận</span>
+              </button>
+            </div>
+            <div class="col-6 col-md-3">
+              <button type="button" class="buyer-order-tile w-100 h-100 border-0 bg-transparent"
+                      onclick="openBuyerOrdersWithStatus('confirmed')">
+                <span class="buyer-order-icon">
+                  <i class="bi bi-box-seam" aria-hidden="true"></i>
+                  <span class="badge rounded-pill bg-warning text-dark" id="buy-order-count-confirmed">...</span>
+                </span>
+                <span class="buyer-order-label">Chờ lấy hàng</span>
+              </button>
+            </div>
+            <div class="col-6 col-md-3">
+              <button type="button" class="buyer-order-tile w-100 h-100 border-0 bg-transparent"
+                      onclick="openBuyerOrdersWithStatus('shipping')">
+                <span class="buyer-order-icon">
+                  <i class="bi bi-truck" aria-hidden="true"></i>
+                  <span class="badge rounded-pill bg-warning text-dark" id="buy-order-count-shipping">...</span>
+                </span>
+                <span class="buyer-order-label">Chờ giao hàng</span>
+              </button>
+            </div>
+            <div class="col-6 col-md-3">
+              <button type="button" class="buyer-order-tile w-100 h-100 border-0 bg-transparent"
+                      onclick="openBuyerOrdersWithStatus('unrated')">
+                <span class="buyer-order-icon">
+                  <i class="bi bi-star" aria-hidden="true"></i>
+                  <span class="badge rounded-pill bg-warning text-dark" id="buy-order-count-unrated">...</span>
+                </span>
+                <span class="buyer-order-label">Đánh giá</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Tab 1: My Listings -->
         <div id="tab-content-listings" class="card border-0 shadow-sm rounded-4 p-4 bg-white">
           <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
@@ -76,6 +136,54 @@
 
           <div id="my-listings-container">
             <div class="text-center py-4 text-muted">Đang tải tin đăng...</div>
+          </div>
+        </div>
+
+        <!-- Tab: Đơn hàng của tôi (người mua) -->
+        <div id="tab-content-buy-orders" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-bag-check text-success me-2"></i>Đơn hàng của tôi</h5>
+            <div class="order-filter-bar">
+              <select id="buy-order-status-filter" class="form-select form-select-sm" onchange="loadOrders('buyer')">
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ xác nhận</option>
+                <option value="confirmed">Đã xác nhận</option>
+                <option value="shipping">Đang giao hàng</option>
+                <option value="completed">Đã hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
+              </select>
+              <input type="text" id="buy-order-search" class="form-control form-control-sm" placeholder="Tìm mã đơn hàng" maxlength="30">
+              <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="loadOrders('buyer')">
+                <i class="bi bi-search me-1"></i>Tìm
+              </button>
+            </div>
+          </div>
+          <div id="buy-orders-container">
+            <div class="text-center py-4 text-muted">Đang tải đơn hàng...</div>
+          </div>
+        </div>
+
+        <!-- Tab: Quản lý đơn hàng (người bán) -->
+        <div id="tab-content-sell-orders" class="card border-0 shadow-sm rounded-4 p-4 bg-white d-none">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-box-seam text-warning me-2"></i>Quản lý đơn hàng</h5>
+            <div class="order-filter-bar">
+              <select id="sell-order-status-filter" class="form-select form-select-sm" onchange="loadOrders('seller')">
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ xác nhận</option>
+                <option value="confirmed">Đã xác nhận</option>
+                <option value="shipping">Đang giao hàng</option>
+                <option value="completed">Đã hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
+              </select>
+              <input type="text" id="sell-order-search" class="form-control form-control-sm" placeholder="Tìm mã đơn hàng" maxlength="30">
+              <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="loadOrders('seller')">
+                <i class="bi bi-search me-1"></i>Tìm
+              </button>
+            </div>
+          </div>
+          <div id="sell-orders-container">
+            <div class="text-center py-4 text-muted">Đang tải đơn hàng...</div>
           </div>
         </div>
 
@@ -135,6 +243,24 @@
       <p class="mb-0">Patuhi Marketplace &copy; 2026</p>
     </div>
   </footer>
+
+  <!-- Modal Chi tiết đơn hàng -->
+  <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="orderDetailModalLabel">
+            <i class="bi bi-receipt text-warning me-2"></i>Chi tiết đơn hàng
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body" id="order-detail-body">
+          <div class="text-center py-4 text-muted">Đang tải chi tiết đơn...</div>
+        </div>
+        <div class="modal-footer border-0 pt-0" id="order-detail-footer"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/main.js"></script>

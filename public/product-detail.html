@@ -206,6 +206,24 @@
             </div>
           </div>
 
+          <!-- Kết quả đặt hàng thật (đã lưu Database) -->
+          <div class="alert alert-success border-success-subtle mt-3 d-none" id="real-order-success" role="status">
+            <div class="d-flex gap-2">
+              <i class="bi bi-check-circle-fill fs-5 text-success" aria-hidden="true"></i>
+              <div class="flex-grow-1 min-width-0">
+                <h6 class="fw-bold mb-1 text-success">Đặt hàng thành công!</h6>
+                <p class="small text-muted mb-2">
+                  Đơn hàng đã được <strong>lưu vào hệ thống</strong> và gửi đến người bán.
+                  Bạn có thể kiểm tra lại sau khi tải lại trang.
+                </p>
+                <div class="small" id="real-order-summary"></div>
+                <a href="/profile?tab=buy-orders" class="btn btn-sm btn-outline-success rounded-pill mt-2">
+                  <i class="bi bi-bag-check me-1"></i>Xem đơn hàng của tôi
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div class="border rounded-3 bg-light p-3 mt-3" id="price-negotiation" hidden>
             <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
               <div>
@@ -341,6 +359,76 @@
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
             <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4" id="btn-confirm-virtual-order">
               <i class="bi bi-bag-check me-1"></i>Xác nhận tạo đơn đặt
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Đặt hàng thật (đã đăng nhập, lưu Database) -->
+  <div class="modal fade" id="realOrderModal" tabindex="-1" aria-labelledby="realOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <form id="real-order-form" onsubmit="confirmRealOrder(event)">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="realOrderModalLabel">
+              <i class="bi bi-cart-check text-warning me-2"></i>Đặt hàng
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info small mb-3" role="note">
+              <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+              Đơn hàng này sẽ được <strong>lưu vào hệ thống</strong>. Giá bán và tổng tiền được hệ thống tính lại
+              từ Database, không phụ thuộc vào số liệu hiển thị trên trình duyệt.
+            </div>
+            <div class="row g-3">
+              <div class="col-md-5">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                  <div class="fw-bold small text-muted text-uppercase mb-2">Sản phẩm</div>
+                  <div class="d-flex gap-3 align-items-start">
+                    <img id="real-order-image" src="" alt="Ảnh sản phẩm" class="rounded" style="width:80px;height:80px;object-fit:cover;" onerror="this.src='https://placehold.co/80x80?text=Anh'">
+                    <div class="min-width-0">
+                      <div class="fw-semibold text-break" id="real-order-product"></div>
+                      <div class="text-danger fw-bold mt-1" id="real-order-unit-price"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <div class="mb-3">
+                  <label for="real-order-name" class="form-label fw-semibold">Họ tên người nhận (*)</label>
+                  <input type="text" class="form-control" id="real-order-name" maxlength="100" required placeholder="Nhập họ tên">
+                </div>
+                <div class="mb-3">
+                  <label for="real-order-phone" class="form-label fw-semibold">Số điện thoại (*)</label>
+                  <input type="tel" class="form-control" id="real-order-phone" pattern="0[0-9]{9}" maxlength="10" required
+                         title="Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số." placeholder="VD: 0987654321">
+                </div>
+                <div class="mb-3">
+                  <label for="real-order-address" class="form-label fw-semibold">Địa chỉ giao hàng (*)</label>
+                  <textarea class="form-control" id="real-order-address" rows="2" maxlength="300" required placeholder="Số nhà, đường, quận/huyện, tỉnh/thành phố"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label for="real-order-quantity" class="form-label fw-semibold">Số lượng (*)</label>
+                  <input type="number" class="form-control" id="real-order-quantity" min="1" max="99" step="1" value="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="real-order-note" class="form-label fw-semibold">Ghi chú đơn hàng (Tùy chọn)</label>
+                  <textarea class="form-control" id="real-order-note" rows="2" maxlength="300" placeholder="VD: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-3">
+              <span class="fw-semibold">Tổng tiền thanh toán</span>
+              <strong class="fs-4 text-danger" id="real-order-total">0 ₫</strong>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4" id="btn-confirm-real-order">
+              <i class="bi bi-bag-check me-1"></i>Xác nhận đặt hàng
             </button>
           </div>
         </form>
