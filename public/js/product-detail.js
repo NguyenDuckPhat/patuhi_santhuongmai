@@ -1,16 +1,34 @@
 let currentProduct = null;
 let sellerPhone = '';
 let commentProductId = null;
+// Đơn hàng ảo: chỉ tồn tại trong bộ nhớ JS của trang, không lưu DB / không gọi API.
+let virtualOrder = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  resetVirtualOrderState();
+
   document.getElementById('price-offer-amount')?.addEventListener('input', (event) => {
     event.currentTarget.setCustomValidity('');
   });
+
+  // Xóa lỗi validate cũ khi người dùng nhập lại (đơn đặt)
+  for (const id of ['virtual-order-name', 'virtual-order-phone', 'virtual-order-address', 'virtual-order-quantity']) {
+    document.getElementById(id)?.addEventListener('input', (event) => {
+      event.currentTarget.setCustomValidity('');
+    });
+  }
+  document.getElementById('virtual-order-quantity')?.addEventListener('input', updateVirtualOrderTotal);
+
   const urlParts = window.location.pathname.split('/');
   const productId = urlParts[urlParts.length - 1];
   if (productId) {
     loadProductDetail(productId);
   }
+});
+
+// Trình duyệt có thể khôi phục trạng thái từ back/forward cache: xóa sạch đơn đặt.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) resetVirtualOrderState();
 });
 
 async function loadProductDetail(id) {
@@ -103,6 +121,9 @@ async function loadProductDetail(id) {
         <button class="btn btn-primary fw-bold py-2 rounded-pill" onclick="startChatWithSeller()">
           <i class="bi bi-chat-dots-fill me-1"></i> Chat với người bán
         </button>
+        <button class="btn btn-warning text-dark fw-bold py-2 rounded-pill" onclick="openVirtualOrderModal()">
+          <i class="bi bi-bag-check me-1"></i> Tạo đơn đặt (trải nghiệm)
+        </button>
       `;
       document.getElementById('price-negotiation').hidden = false;
     }
@@ -177,6 +198,186 @@ function changeMainImage(url, elem) {
 
 function revealPhone() {
   document.getElementById('seller-phone-text').innerText = sellerPhone;
+}
+
+// ==========================================
+// ĐẶT HÀNG ẢO (KHÔNG CẦN ĐĂNG NHẬP, KHÔNG LƯU DB)
+// ==========================================
+
+function resetVirtualOrderState() {
+  virtualOrder = null;
+
+  const form = document.getElementById('virtual-order-form');
+  if (form) form.reset();
+
+  const quantity = document.getElementById('virtual-order-quantity');
+  if (quantity) quantity.value = '1';
+
+  document.getElementById('virtual-order-success')?.classList.add('d-none');
+  document.getElementById('virtual-order-summary')?.replaceChildren();
+
+  const modalEl = document.getElementById('virtualOrderModal');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    const openModal = bootstrap.Modal.getInstance(modalEl);
+    if (openModal) openModal.hide();
+  }
+
+  updateVirtualOrderTotal();
+}
+
+function updateVirtualOrderTotal() {
+  const totalEl = document.getElementById('virtual-order-total');
+  if (!totalEl) return;
+
+  const unitPrice = Number(currentProduct?.price) || 0;
+  const rawQuantity = parseInt(document.getElementById('virtual-order-quantity')?.value, 10);
+  const quantity = Number.isFinite(rawQuantity) && rawQuantity > 0 ? rawQuantity : 1;
+  totalEl.textContent = PatuhiApp.formatPrice(unitPrice * quantity);
+}
+
+function openVirtualOrderModal() {
+  if (!currentProduct) {
+    PatuhiApp.showToast('Thông tin sản phẩm chưa sẵn sàng.', 'warning');
+    return;
+  }
+
+  const images = currentProduct.images && currentProduct.images.length
+    ? currentProduct.images
+    : [{ image_url: 'https://placehold.co/80x80?text=Khong+co+anh' }];
+
+  const imageEl = document.getElementById('virtual-order-image');
+  if (imageEl) imageEl.src = images[0].image_url;
+
+  const productEl = document.getElementById('virtual-order-product');
+  if (productEl) productEl.textContent = currentProduct.title;
+
+  const unitPriceEl = document.getElementById('virtual-order-unit-price');
+  if (unitPriceEl) unitPriceEl.textContent = `${PatuhiApp.formatPrice(currentProduct.price)} / sản phẩm`;
+
+  // Mỗi lần mở luôn bắt đầu từ form trống; không đọc localStorage/sessionStorage.
+  document.getElementById('virtual-order-form')?.reset();
+  const quantityEl = document.getElementById('virtual-order-quantity');
+  if (quantityEl) quantityEl.value = '1';
+  for (const id of ['virtual-order-name', 'virtual-order-phone', 'virtual-order-address', 'virtual-order-quantity']) {
+    document.getElementById(id)?.setCustomValidity('');
+  }
+  document.getElementById('virtual-order-success')?.classList.add('d-none');
+  document.getElementById('virtual-order-summary')?.replaceChildren();
+  updateVirtualOrderTotal();
+
+  const modalEl = document.getElementById('virtualOrderModal');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function confirmVirtualOrder(event) {
+  event.preventDefault();
+  if (!currentProduct) return;
+
+  const nameEl = document.getElementById('virtual-order-name');
+  const phoneEl = document.getElementById('virtual-order-phone');
+  const addressEl = document.getElementById('virtual-order-address');
+  const quantityEl = document.getElementById('virtual-order-quantity');
+
+  const name = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  const address = addressEl.value.trim();
+  const note = document.getElementById('virtual-order-note')?.value.trim() || '';
+  const quantity = parseInt(quantityEl.value, 10);
+
+  if (!name) {
+    nameEl.setCustomValidity('Vui lòng nhập họ tên người nhận.');
+    nameEl.reportValidity();
+    return;
+  }
+  if (!phone) {
+    phoneEl.setCustomValidity('Vui lòng nhập số điện thoại.');
+    phoneEl.reportValidity();
+    return;
+  }
+  if (!address) {
+    addressEl.setCustomValidity('Vui lòng nhập địa chỉ nhận hàng.');
+    addressEl.reportValidity();
+    return;
+  }
+  if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) {
+    quantityEl.setCustomValidity('Số lượng phải từ 1 đến 99.');
+    quantityEl.reportValidity();
+    return;
+  }
+
+  const unitPrice = Number(currentProduct.price) || 0;
+  const images = currentProduct.images && currentProduct.images.length
+    ? currentProduct.images
+    : [{ image_url: 'https://placehold.co/120x120?text=Khong+co+anh' }];
+
+  virtualOrder = {
+    productTitle: currentProduct.title,
+    productImage: images[0].image_url,
+    quantity,
+    unitPrice,
+    total: unitPrice * quantity,
+    customerName: name,
+    phone,
+    address,
+    note,
+    createdAt: new Date()
+  };
+
+  const modalEl = document.getElementById('virtualOrderModal');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    const openModal = bootstrap.Modal.getInstance(modalEl);
+    if (openModal) openModal.hide();
+  }
+
+  renderVirtualOrderResult(virtualOrder);
+
+  // Lưu vào "kho RAM" dùng chung để mục Đơn đặt hiển thị.
+  // Không fetch, không localStorage/sessionStorage, không ghi Database.
+  if (typeof PatuhiApp !== 'undefined' && typeof PatuhiApp.addTempOrder === 'function') {
+    PatuhiApp.addTempOrder(virtualOrder);
+  }
+
+  // Dọn form nhưng vẫn giữ panel kết quả hiển thị.
+  document.getElementById('virtual-order-form')?.reset();
+  if (quantityEl) quantityEl.value = '1';
+  updateVirtualOrderTotal();
+
+  PatuhiApp.showToast('Đơn đặt đã được tạo! (chỉ trên trình duyệt, không lưu hệ thống)', 'success');
+}
+
+function renderVirtualOrderResult(order) {
+  const summary = document.getElementById('virtual-order-summary');
+  const successPanel = document.getElementById('virtual-order-success');
+  if (!summary || !successPanel) return;
+
+  summary.replaceChildren();
+  const addRow = (label, value) => {
+    const row = document.createElement('div');
+    row.className = 'd-flex justify-content-between gap-3 py-1 border-bottom border-light';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'text-muted text-nowrap';
+    labelEl.textContent = label;
+    const valueEl = document.createElement('span');
+    valueEl.className = 'fw-semibold text-end text-break';
+    valueEl.textContent = value;
+    row.append(labelEl, valueEl);
+    summary.appendChild(row);
+  };
+
+  addRow('Sản phẩm', order.productTitle);
+  addRow('Số lượng', String(order.quantity));
+  addRow('Đơn giá', PatuhiApp.formatPrice(order.unitPrice));
+  addRow('Tổng tiền', PatuhiApp.formatPrice(order.total));
+  addRow('Người nhận', order.customerName);
+  addRow('Điện thoại', order.phone);
+  addRow('Địa chỉ', order.address);
+  addRow('Ghi chú', order.note || 'Không có');
+  addRow('Thời gian', order.createdAt.toLocaleString('vi-VN'));
+
+  successPanel.classList.remove('d-none');
+  successPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function updateFavoriteButton(isFav) {

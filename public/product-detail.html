@@ -189,6 +189,23 @@
           <div class="d-grid gap-2" id="detail-action-buttons">
             <!-- Chat & Phone actions -->
           </div>
+
+          <!-- Kết quả đặt hàng trải nghiệm (chỉ tồn tại trên giao diện, mất khi F5) -->
+          <div class="alert alert-success border-success-subtle mt-3 d-none" id="virtual-order-success" role="status">
+            <div class="d-flex gap-2">
+              <i class="bi bi-check-circle-fill fs-5 text-success" aria-hidden="true"></i>
+              <div class="flex-grow-1 min-width-0">
+                <h6 class="fw-bold mb-1 text-success">Đơn đặt đã được tạo!</h6>
+                <p class="small text-muted mb-2">
+                  Đây là <strong>đơn đặt</strong> để bạn trải nghiệm giao diện. Thông tin
+                  <strong>KHÔNG được lưu vào hệ thống</strong>, <strong>KHÔNG gửi cho người bán</strong>
+                  và sẽ biến mất hoàn toàn khi bạn tải lại trang. Không có đơn hàng thật nào được tạo.
+                </p>
+                <div class="small" id="virtual-order-summary"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="border rounded-3 bg-light p-3 mt-3" id="price-negotiation" hidden>
             <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
               <div>
@@ -255,6 +272,76 @@
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
             <button type="submit" class="btn btn-warning fw-semibold" id="btn-send-price-offer"><i class="bi bi-send me-1"></i>Gửi đề nghị</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Đặt hàng trải nghiệm (không gọi API, không lưu Database) -->
+  <div class="modal fade" id="virtualOrderModal" tabindex="-1" aria-labelledby="virtualOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <form id="virtual-order-form" onsubmit="confirmVirtualOrder(event)">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="virtualOrderModalLabel">
+              <i class="bi bi-bag-check text-warning me-2"></i>Tạo đơn đặt (trải nghiệm)
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning small mb-3" role="note">
+              <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+              Đây là <strong>đơn đặt</strong> để trải nghiệm chức năng. Thông tin chỉ tồn tại trên trình duyệt
+              và sẽ mất khi tải lại trang. Không có đơn hàng thật nào được ghi nhận.
+            </div>
+            <div class="row g-3">
+              <div class="col-md-5">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                  <div class="fw-bold small text-muted text-uppercase mb-2">Sản phẩm</div>
+                  <div class="d-flex gap-3 align-items-start">
+                    <img id="virtual-order-image" src="" alt="Ảnh sản phẩm" class="rounded" style="width:80px;height:80px;object-fit:cover;" onerror="this.src='https://placehold.co/80x80?text=Anh'">
+                    <div class="min-width-0">
+                      <div class="fw-semibold text-break" id="virtual-order-product"></div>
+                      <div class="text-danger fw-bold mt-1" id="virtual-order-unit-price"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <div class="mb-3">
+                  <label for="virtual-order-name" class="form-label fw-semibold">Họ tên người nhận (*)</label>
+                  <input type="text" class="form-control" id="virtual-order-name" maxlength="100" required placeholder="Nhập họ tên">
+                </div>
+                <div class="mb-3">
+                  <label for="virtual-order-phone" class="form-label fw-semibold">Số điện thoại (*)</label>
+                  <input type="tel" class="form-control" id="virtual-order-phone" pattern="0[0-9]{9}" maxlength="10" required
+                         title="Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số." placeholder="VD: 0987654321">
+                </div>
+                <div class="mb-3">
+                  <label for="virtual-order-address" class="form-label fw-semibold">Địa chỉ nhận hàng (*)</label>
+                  <textarea class="form-control" id="virtual-order-address" rows="2" maxlength="300" required placeholder="Số nhà, đường, quận/huyện, tỉnh/thành phố"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label for="virtual-order-quantity" class="form-label fw-semibold">Số lượng (*)</label>
+                  <input type="number" class="form-control" id="virtual-order-quantity" min="1" max="99" step="1" value="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="virtual-order-note" class="form-label fw-semibold">Ghi chú (Tùy chọn)</label>
+                  <textarea class="form-control" id="virtual-order-note" rows="2" maxlength="300" placeholder="VD: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-3">
+              <span class="fw-semibold">Tổng tiền dự kiến</span>
+              <strong class="fs-4 text-danger" id="virtual-order-total">0 ₫</strong>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4" id="btn-confirm-virtual-order">
+              <i class="bi bi-bag-check me-1"></i>Xác nhận tạo đơn đặt
+            </button>
           </div>
         </form>
       </div>

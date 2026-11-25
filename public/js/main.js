@@ -3,6 +3,11 @@
 const PatuhiApp = {
   currentUser: null,
 
+  // Đơn đặt: chỉ tồn tại trong RAM của document hiện tại.
+  // F5 / tải lại trang => object được tạo lại => mảng này rỗng.
+  tempOrders: [],
+  tempOrderSequence: 0,
+
   // Khởi tạo kiểm tra đăng nhập
   async init() {
     // Kiểm tra token từ Google OAuth redirect callback
@@ -59,6 +64,10 @@ const PatuhiApp = {
       const isAdmin = this.currentUser.role === 'admin';
       navAuthContainer.innerHTML = `
         <div class="d-flex align-items-center gap-2 gap-md-3">
+          <a href="javascript:void(0)" class="temp-order-nav-link fw-semibold" onclick="PatuhiApp.openTempOrders()" title="Đặt đơn">
+            Đặt đơn
+            <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
+          </a>
           <a href="/favorites" class="btn btn-outline-secondary position-relative" title="Tin yêu thích">
             <i class="bi bi-heart"></i>
           </a>
@@ -93,6 +102,10 @@ const PatuhiApp = {
     } else {
       navAuthContainer.innerHTML = `
         <div class="d-flex align-items-center gap-2">
+          <a href="javascript:void(0)" class="temp-order-nav-link fw-semibold" onclick="PatuhiApp.openTempOrders()" title="Đặt đơn">
+            Đặt đơn
+            <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
+          </a>
           <a href="/login" class="btn btn-outline-primary rounded-pill px-3">Đăng nhập</a>
           <a href="/register" class="btn btn-primary rounded-pill px-3">Đăng ký</a>
           <a href="/login?redirect=/post" class="btn btn-warning text-white fw-bold rounded-pill px-3 shadow-sm">
@@ -101,6 +114,7 @@ const PatuhiApp = {
         </div>
       `;
     }
+    this.updateTempOrderBadge();
   },
 
   // Hiển thị Footer đồng bộ toàn hệ thống
@@ -184,6 +198,12 @@ const PatuhiApp = {
               <h6 class="footer-col-title text-white fw-bold mb-3">Về Patuhi</h6>
               <ul class="footer-links list-unstyled small mb-0">
                 <li><a href="/"><i class="bi bi-chevron-right"></i> Trang chủ</a></li>
+                <li>
+                  <button type="button" class="footer-link-btn" onclick="PatuhiApp.openTempOrders()">
+                    <i class="bi bi-chevron-right"></i> Đơn đặt
+                    <span class="badge bg-warning text-dark d-none" data-temp-order-count>0</span>
+                  </button>
+                </li>
                 <li><a href="/#categories-grid"><i class="bi bi-chevron-right"></i> Danh mục sản phẩm</a></li>
                 <li><a href="/post"><i class="bi bi-chevron-right"></i> Đăng tin mua bán</a></li>
                 <li><a href="/my-reports"><i class="bi bi-chevron-right"></i> Báo cáo vi phạm</a></li>
@@ -240,6 +260,7 @@ const PatuhiApp = {
         </div>
       </div>
     `;
+    this.updateTempOrderBadge();
   },
 
   // Đăng xuất
@@ -282,6 +303,258 @@ const PatuhiApp = {
     const bsToast = new bootstrap.Toast(toastElem, { delay: 3500 });
     bsToast.show();
     toastElem.addEventListener('hidden.bs.toast', () => toastElem.remove());
+  },
+
+  // ==========================================
+  // ĐƠN ĐẶT (RAM - KHÔNG LƯU DB/STORAGE)
+  // ==========================================
+
+  addTempOrder(order) {
+    this.tempOrderSequence += 1;
+    this.tempOrders.push({
+      ...order,
+      tempLabel: `Đơn đặt #${this.tempOrderSequence}`
+    });
+    this.updateTempOrderBadge();
+  },
+
+  updateTempOrderBadge() {
+    const count = this.tempOrders.length;
+    document.querySelectorAll('[data-temp-order-count]').forEach((badge) => {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.classList.toggle('d-none', count === 0);
+    });
+  },
+
+  ensureTempOrderOverlay() {
+    if (document.getElementById('temp-orders-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'temp-orders-overlay';
+    overlay.className = 'temp-orders-overlay d-none';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Đơn đặt');
+    overlay.innerHTML = `
+      <div class="temp-orders-panel">
+        <div class="temp-orders-header">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-bag-check text-warning me-2"></i>Đơn đặt của bạn</h5>
+            <p class="small text-muted mb-0">Các đơn đặt chỉ tồn tại trên trình duyệt này và sẽ mất khi tải lại trang.</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Đóng" onclick="PatuhiApp.closeTempOrders()"></button>
+        </div>
+        <div class="temp-orders-body" id="temp-orders-body"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) this.closeTempOrders();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !overlay.classList.contains('d-none')) this.closeTempOrders();
+    });
+  },
+
+  openTempOrders() {
+    this.ensureTempOrderOverlay();
+    this.renderTempOrderList();
+    const overlay = document.getElementById('temp-orders-overlay');
+    if (overlay) overlay.classList.remove('d-none');
+    document.body.classList.add('temp-orders-open');
+  },
+
+  closeTempOrders() {
+    const overlay = document.getElementById('temp-orders-overlay');
+    if (overlay) overlay.classList.add('d-none');
+    document.body.classList.remove('temp-orders-open');
+  },
+
+  renderTempOrderList() {
+    const body = document.getElementById('temp-orders-body');
+    if (!body) return;
+    body.replaceChildren();
+
+    const totalLine = document.createElement('div');
+    totalLine.className = 'small text-muted mb-3';
+    totalLine.textContent = `Tổng: ${this.tempOrders.length} đơn đặt`;
+    body.appendChild(totalLine);
+
+    if (this.tempOrders.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'text-center text-muted py-5 temp-orders-empty';
+      empty.innerHTML = `
+        <i class="bi bi-bag-heart fs-1 d-block mb-3 text-warning"></i>
+        <p class="fw-semibold mb-1">Chưa có đơn đặt nào.</p>
+        <p class="small mb-0">Mở một sản phẩm và bấm <strong>Tạo đơn đặt (trải nghiệm)</strong> để tạo đơn đặt tại đây.</p>
+      `;
+      body.appendChild(empty);
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'row row-cols-1 row-cols-md-2 g-3';
+
+    this.tempOrders.forEach((order, index) => {
+      const col = document.createElement('div');
+      col.className = 'col';
+
+      const card = document.createElement('div');
+      card.className = 'card border-0 shadow-sm rounded-4 h-100 temp-order-card';
+
+      const cardBody = document.createElement('div');
+      cardBody.className = 'card-body p-3';
+
+      const head = document.createElement('div');
+      head.className = 'd-flex gap-3 align-items-start mb-2';
+
+      const img = document.createElement('img');
+      img.className = 'temp-order-thumb';
+      img.src = order.productImage || '';
+      img.alt = 'Ảnh sản phẩm';
+      img.onerror = function () { this.src = 'https://placehold.co/80x80?text=Anh'; };
+
+      const info = document.createElement('div');
+      info.className = 'min-width-0 flex-grow-1';
+
+      const label = document.createElement('div');
+      label.className = 'small fw-bold text-warning mb-1';
+      label.textContent = order.tempLabel;
+
+      const name = document.createElement('div');
+      name.className = 'fw-bold text-break';
+      name.textContent = order.productTitle;
+
+      const unit = document.createElement('div');
+      unit.className = 'small text-danger fw-semibold mt-1';
+      unit.textContent = this.formatPrice(order.unitPrice);
+
+      info.append(label, name, unit);
+      head.append(img, info);
+      cardBody.appendChild(head);
+
+      const meta = document.createElement('div');
+      meta.className = 'small text-muted mb-3';
+      meta.textContent = `Số lượng: ${order.quantity} • Tổng: ${this.formatPrice(order.total)} • Người nhận: ${order.customerName}`;
+      cardBody.appendChild(meta);
+
+      const status = document.createElement('div');
+      status.className = 'badge temp-order-status bg-warning-subtle text-dark mb-3';
+      status.textContent = 'Đơn đặt – Chưa gửi đến người bán';
+      cardBody.appendChild(status);
+
+      const detailBtn = document.createElement('button');
+      detailBtn.type = 'button';
+      detailBtn.className = 'btn btn-sm btn-outline-warning text-dark fw-semibold rounded-pill w-100';
+      detailBtn.textContent = 'Xem chi tiết';
+      detailBtn.addEventListener('click', () => this.renderTempOrderDetail(index));
+      cardBody.appendChild(detailBtn);
+
+      card.appendChild(cardBody);
+      col.appendChild(card);
+      grid.appendChild(col);
+    });
+
+    body.appendChild(grid);
+  },
+
+  renderTempOrderDetail(index) {
+    const order = this.tempOrders[index];
+    const body = document.getElementById('temp-orders-body');
+    if (!order || !body) return;
+    body.replaceChildren();
+
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'btn btn-light btn-sm rounded-pill mb-3 temp-order-back-btn';
+    backBtn.innerHTML = '<i class="bi bi-arrow-left me-1"></i>Quay lại danh sách';
+    backBtn.addEventListener('click', () => this.renderTempOrderList());
+    body.appendChild(backBtn);
+
+    const card = document.createElement('div');
+    card.className = 'card border-0 shadow-sm rounded-4';
+
+    const cardBody = document.createElement('div');
+    cardBody.className = 'card-body p-3 p-md-4';
+
+    const heading = document.createElement('div');
+    heading.className = 'd-flex justify-content-between align-items-start gap-3 mb-3';
+
+    const headingText = document.createElement('div');
+    const title = document.createElement('h6');
+    title.className = 'fw-bold mb-1';
+    title.textContent = `Chi tiết ${order.tempLabel}`;
+    const sub = document.createElement('div');
+    sub.className = 'small text-muted';
+    sub.textContent = 'Chỉ tồn tại trên trình duyệt, không gửi đến người bán và sẽ mất khi tải lại trang.';
+    headingText.append(title, sub);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge temp-order-status bg-warning-subtle text-dark text-nowrap';
+    badge.textContent = 'Đơn đặt – Chưa gửi đến người bán';
+
+    heading.append(headingText, badge);
+    cardBody.appendChild(heading);
+
+    const productRow = document.createElement('div');
+    productRow.className = 'd-flex gap-3 align-items-start border rounded-3 bg-light p-3 mb-3';
+
+    const img = document.createElement('img');
+    img.className = 'temp-order-thumb-lg';
+    img.src = order.productImage || '';
+    img.alt = 'Ảnh sản phẩm';
+    img.onerror = function () { this.src = 'https://placehold.co/120x120?text=Anh'; };
+
+    const productInfo = document.createElement('div');
+    productInfo.className = 'min-width-0';
+    const productName = document.createElement('div');
+    productName.className = 'fw-bold text-break';
+    productName.textContent = order.productTitle;
+    const productPrice = document.createElement('div');
+    productPrice.className = 'text-danger fw-bold mt-1';
+    productPrice.textContent = this.formatPrice(order.unitPrice);
+    productInfo.append(productName, productPrice);
+
+    productRow.append(img, productInfo);
+    cardBody.appendChild(productRow);
+
+    const list = document.createElement('div');
+    list.className = 'temp-order-detail-list';
+    const addRow = (label, value, highlight = false) => {
+      const row = document.createElement('div');
+      row.className = 'd-flex justify-content-between gap-3 py-2 border-bottom border-light';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'text-muted text-nowrap small';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = highlight
+        ? 'fw-bold text-danger text-end text-break'
+        : 'fw-semibold text-end text-break small';
+      valueEl.textContent = value;
+      row.append(labelEl, valueEl);
+      list.appendChild(row);
+    };
+
+    addRow('Tên sản phẩm', order.productTitle);
+    addRow('Giá bán', this.formatPrice(order.unitPrice));
+    addRow('Số lượng', String(order.quantity));
+    addRow('Tổng tiền', this.formatPrice(order.total), true);
+    addRow('Họ tên người nhận', order.customerName);
+    addRow('Số điện thoại', order.phone);
+    addRow('Địa chỉ nhận hàng', order.address);
+    addRow('Ghi chú', order.note || 'Không có');
+    addRow('Thời gian tạo', order.createdAt instanceof Date ? order.createdAt.toLocaleString('vi-VN') : String(order.createdAt || ''));
+    addRow('Trạng thái', 'Đơn đặt – Chưa gửi đến người bán');
+    cardBody.appendChild(list);
+
+    const note = document.createElement('div');
+    note.className = 'alert alert-warning small mt-3 mb-0';
+    note.innerHTML = '<i class="bi bi-info-circle me-1"></i>Đơn đặt này không phải đơn hàng thật. Thông tin không được lưu vào hệ thống và không ảnh hưởng đến doanh thu, thống kê hay danh sách đơn hàng của người bán.';
+    cardBody.appendChild(note);
+
+    card.appendChild(cardBody);
+    body.appendChild(card);
   },
 
   // Định dạng giá tiền VND
