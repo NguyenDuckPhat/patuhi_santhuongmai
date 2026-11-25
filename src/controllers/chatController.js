@@ -7,7 +7,7 @@ const getModels = () => initModels(getSequelize());
 // 1. Lấy danh sách các cuộc hội thoại của người dùng hiện tại
 const getConversations = async (req, res) => {
   try {
-    const { Conversation, Product, ProductImage, User } = getModels();
+    const { Conversation, Product, ProductImage, User, Message, sequelize } = getModels();
     const userId = req.user.id;
 
     const conversations = await Conversation.findAll({
@@ -41,10 +41,28 @@ const getConversations = async (req, res) => {
       order: [['last_message_at', 'DESC']]
     });
 
-    // Định dạng dữ liệu để dễ hiển thị: xác định đối phương (otherParty)
+    const conversationIds = conversations.map(conversation => conversation.id);
+    const unreadRows = conversationIds.length > 0
+      ? await Message.findAll({
+        attributes: ['conversation_id', [sequelize.fn('COUNT', sequelize.col('id')), 'unread_count']],
+        where: {
+          conversation_id: { [Op.in]: conversationIds },
+          sender_id: { [Op.ne]: userId },
+          is_read: false
+        },
+        group: ['conversation_id'],
+        raw: true
+      })
+      : [];
+    const unreadCountByConversation = new Map(
+      unreadRows.map(row => [Number(row.conversation_id), Number(row.unread_count)])
+    );
+
+    // Định dạng dữ liệu để dễ hiển thị: xác định đối phương và số tin chưa đọc.
     const formatted = conversations.map(conv => {
       const c = conv.toJSON();
       c.otherParty = c.buyer_id === userId ? c.seller : c.buyer;
+      c.unread_count = unreadCountByConversation.get(Number(c.id)) || 0;
       return c;
     });
 
@@ -60,6 +78,46 @@ const getConversations = async (req, res) => {
       success: false,
       message: 'Không thể lấy danh sách cuộc trò chuyện.',
       error: error.message
+    });
+  }
+};
+
+const getUnreadCount = async (req, res) => {
+  try {
+    const { Conversation, Message } = getModels();
+    const userId = req.user.id;
+    const conversations = await Conversation.findAll({
+      where: {
+        [Op.or]: [{ buyer_id: userId }, { seller_id: userId }]
+      },
+      attributes: ['id'],
+      raw: true
+    });
+
+    if (conversations.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: { unreadCount: 0 }
+      });
+    }
+
+    const unreadCount = await Message.count({
+      where: {
+        conversation_id: { [Op.in]: conversations.map(conversation => conversation.id) },
+        sender_id: { [Op.ne]: userId },
+        is_read: false
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { unreadCount }
+    });
+  } catch (error) {
+    console.error('Lỗi đếm tin nhắn chưa đọc:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể tải số tin nhắn chưa đọc.'
     });
   }
 };
@@ -210,6 +268,10 @@ const getMessages = async (req, res) => {
           conversationId: Number(conversationId),
           readerId: userId
         });
+        io.to(`user_${userId}`).emit('conversation_read', {
+          conversationId: Number(conversationId),
+          readerId: userId
+        });
       }
     }
 
@@ -302,6 +364,13 @@ const sendMessage = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       io.to(`conversation_${conversationId}`).emit('receive_message', fullMessage);
+      const recipientId = Number(conversation.buyer_id) === Number(userId)
+        ? conversation.seller_id
+        : conversation.buyer_id;
+      io.to(`user_${recipientId}`).emit('new_message_notification', {
+        conversation_id: Number(conversationId),
+        sender_id: Number(userId)
+      });
     }
 
     return res.status(201).json({
@@ -353,6 +422,7 @@ const recallMessage = async (req, res) => {
 
 module.exports = {
   getConversations,
+  getUnreadCount,
   getOrCreateConversation,
   getReadStatus,
   getMessages,

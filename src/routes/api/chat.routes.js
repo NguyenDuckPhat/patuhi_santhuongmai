@@ -7,6 +7,7 @@ const { uploadChatImage } = require('../../middlewares/upload');
 router.use(authenticate, authorize('member', 'admin'));
 
 router.get('/conversations', chatController.getConversations);
+router.get('/unread-count', chatController.getUnreadCount);
 router.post('/conversations', chatController.getOrCreateConversation);
 router.get('/conversations/:conversationId/read-status', chatController.getReadStatus);
 router.get('/conversations/:conversationId/messages', chatController.getMessages);

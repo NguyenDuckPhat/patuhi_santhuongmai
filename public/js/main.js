@@ -17,6 +17,8 @@ const PatuhiApp = {
     this.renderNavbar();
     this.renderFooter();
     this.updateNotificationCount();
+    this.connectNotificationSocket();
+    this.notificationCountTimer = setInterval(() => this.updateNotificationCount(), 20000);
 
     if (urlParams.get('login') === 'google_success') {
       setTimeout(() => {
@@ -62,6 +64,7 @@ const PatuhiApp = {
           </a>
           <a href="/chat" class="btn btn-outline-secondary position-relative" title="Tin nhắn">
             <i class="bi bi-chat-dots"></i>
+            <span id="unread-message-count" class="unread-message-badge d-none" aria-live="polite"></span>
           </a>
           <a href="/post" class="btn btn-warning text-white fw-bold rounded-pill px-3 shadow-sm">
             <i class="bi bi-plus-circle me-1"></i> Đăng tin
@@ -311,7 +314,68 @@ const PatuhiApp = {
   },
 
   updateNotificationCount() {
-    // optional live indicator
+    if (!this.currentUser) return;
+    const requestId = (this.notificationCountRequestId || 0) + 1;
+    this.notificationCountRequestId = requestId;
+
+    return fetch('/api/chat/unread-count', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = await res.json();
+        if (requestId !== this.notificationCountRequestId) return;
+        const badge = document.getElementById('unread-message-count');
+        if (!badge) return;
+
+        const count = Math.max(0, Number(json.data?.unreadCount) || 0);
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.classList.toggle('d-none', count === 0);
+        badge.setAttribute('aria-label', `${count} tin nhắn chưa đọc`);
+        badge.title = `${count} tin nhắn chưa đọc`;
+      })
+      .catch(() => {});
+  },
+
+  connectNotificationSocket() {
+    if (!this.currentUser) return Promise.resolve(null);
+    if (this.notificationSocket) return Promise.resolve(this.notificationSocket);
+    if (this.notificationSocketPromise) return this.notificationSocketPromise;
+
+    this.notificationSocketPromise = new Promise((resolve) => {
+      const connect = () => {
+        if (typeof window.io !== 'function' || !this.currentUser) return resolve(null);
+
+        this.notificationSocket = window.io({
+          auth: { token: localStorage.getItem('token') || '' }
+        });
+        this.notificationSocket.on('new_message_notification', (notification) => {
+          this.updateNotificationCount();
+          document.dispatchEvent(new CustomEvent('patuhi:new-message', { detail: notification }));
+        });
+        this.notificationSocket.on('conversation_read', (notification) => {
+          this.updateNotificationCount();
+          document.dispatchEvent(new CustomEvent('patuhi:conversation-read', { detail: notification }));
+        });
+        this.notificationSocket.on('connect', () => this.updateNotificationCount());
+        resolve(this.notificationSocket);
+      };
+
+      if (typeof window.io === 'function') {
+        connect();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = '/socket.io/socket.io.js';
+      script.onload = connect;
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
+
+    return this.notificationSocketPromise;
   }
 };
 

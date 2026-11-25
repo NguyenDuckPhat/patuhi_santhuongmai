@@ -9,6 +9,7 @@ let chatSoundReady = false;
 document.addEventListener('DOMContentLoaded', async () => {
   updateChatSoundButton();
   setupRecallButtonHandler();
+  setupChatSearch();
   const enableSoundAfterGesture = () => {
     unlockChatSound();
     document.removeEventListener('pointerdown', enableSoundAfterGesture);
@@ -30,19 +31,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Khởi tạo Socket.io
   if (typeof io !== 'undefined') {
-    socket = io();
+    socket = await PatuhiApp.connectNotificationSocket();
+    if (!socket) socket = io({ auth: { token: localStorage.getItem('token') || '' } });
     socket.on('connect', () => {
       if (activeConversationId) socket.emit('join_conversation', activeConversationId);
     });
-    socket.on('receive_message', (msg) => {
+    socket.on('receive_message', async (msg) => {
       if (Number(msg.sender_id) !== Number(myUser.id)) playIncomingMessageSound();
       if (Number(msg.conversation_id) === Number(activeConversationId)) {
         appendMessage(msg);
         if (Number(msg.sender_id) !== Number(myUser.id)) {
-          markConversationAsRead(activeConversationId);
+          await markConversationAsRead(activeConversationId);
         }
       }
-      updateConversationLastMessage(msg.conversation_id, msg.content);
+      if (Number(msg.sender_id) === Number(myUser.id) || Number(msg.conversation_id) === Number(activeConversationId)) {
+        updateConversationLastMessage(msg.conversation_id, msg.content, 0);
+      }
+      await loadConversations();
+      PatuhiApp.updateNotificationCount();
     });
     socket.on('messages_read', ({ conversationId, readerId }) => {
       if (Number(conversationId) === Number(activeConversationId) && Number(readerId) !== Number(myUser.id)) {
@@ -50,6 +56,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  document.addEventListener('patuhi:new-message', async ({ detail }) => {
+    if (Number(detail?.sender_id) === Number(myUser.id)) return;
+    if (Number(detail?.conversation_id) === Number(activeConversationId) &&
+        document.body.classList.contains('chat-conversation-active')) {
+      await markConversationAsRead(activeConversationId);
+    }
+    await loadConversations();
+  });
+
+  document.addEventListener('patuhi:conversation-read', () => {
+    loadConversations();
+  });
 
   await loadConversations();
 
@@ -146,7 +165,7 @@ async function loadConversations() {
     });
     const json = await res.json();
     if (!res.ok) {
-      container.innerHTML = `<div class="p-3 text-danger small">${json.message}</div>`;
+      container.innerHTML = `<div class="p-3 text-danger small">${escapeHtml(json.message || 'Không thể tải cuộc trò chuyện.')}</div>`;
       return;
     }
 
@@ -165,25 +184,30 @@ async function loadConversations() {
     container.innerHTML = conversations.map(c => {
       const other = c.otherParty || {};
       const prod = c.product || {};
-      const img = prod.images && prod.images[0] ? prod.images[0].image_url : 'https://placehold.co/50x50';
+      const displayName = other.full_name || other.username || 'Người dùng';
+      const unreadCount = Number(c.unread_count) || 0;
+      const preview = unreadCount > 0
+        ? `<strong class="conversation-unread-label">${unreadCount} tin nhắn mới</strong>`
+        : escapeHtml(getConversationPreview(c.last_message));
 
       return `
-        <div class="chat-conv-item ${c.id === activeConversationId ? 'active' : ''}" 
+        <div class="chat-conv-item ${Number(c.id) === Number(activeConversationId) ? 'active' : ''} ${unreadCount > 0 ? 'has-unread' : ''}"
              id="conv-item-${c.id}" onclick="selectConversation(${c.id})">
           <div class="d-flex align-items-center gap-3">
-            <img src="${other.avatar || '/uploads/avatars/default.png'}" class="rounded-circle" width="45" height="45" style="object-fit:cover;">
+            <img src="${escapeHtml(other.avatar || '/uploads/avatars/default.png')}" class="rounded-circle" width="45" height="45" alt="" style="object-fit:cover;">
             <div class="flex-grow-1 overflow-hidden">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold text-truncate" style="max-width: 140px;">${other.full_name || other.username}</span>
+                <span class="fw-bold text-truncate" style="max-width: 140px;">${escapeHtml(displayName)}</span>
                 <span class="text-muted" style="font-size: 11px;">${PatuhiApp.formatTimeAgo(c.last_message_at)}</span>
               </div>
-              <p class="mb-0 text-muted small text-truncate" id="conv-lastmsg-${c.id}">${c.last_message || '...'}</p>
-              <span class="badge bg-light text-dark border small mt-1 text-truncate" style="max-width: 180px;">${prod.title || 'Sản phẩm'}</span>
+              <p class="mb-0 text-muted small text-truncate conversation-preview" id="conv-lastmsg-${c.id}">${preview}</p>
+              <span class="badge bg-light text-dark border small mt-1 text-truncate" style="max-width: 180px;">${escapeHtml(prod.title || 'Sản phẩm')}</span>
             </div>
           </div>
         </div>
       `;
     }).join('');
+    applyConversationSearch();
   } catch (err) {
     container.innerHTML = '<div class="p-3 text-danger small">Lỗi kết nối khi tải danh sách hội thoại.</div>';
   }
@@ -199,6 +223,7 @@ async function selectConversation(conversationId) {
   }
 
   activeConversationId = conversationId;
+  document.body.classList.add('chat-conversation-active');
   if (socket) {
     socket.emit('join_conversation', conversationId);
   }
@@ -224,7 +249,7 @@ async function selectConversation(conversationId) {
     const json = await res.json();
     if (Number(conversationId) !== Number(activeConversationId)) return;
     if (!res.ok) {
-      messagesContainer.innerHTML = `<div class="p-3 text-danger">${json.message}</div>`;
+      messagesContainer.innerHTML = `<div class="p-3 text-danger">${escapeHtml(json.message || 'Không thể tải tin nhắn.')}</div>`;
       return;
     }
 
@@ -239,10 +264,11 @@ async function selectConversation(conversationId) {
 
     // Product info snippet
     const prodImg = prod.images && prod.images[0] ? prod.images[0].image_url : 'https://placehold.co/40x40';
+    const productId = Number(prod.id);
     document.getElementById('chat-product-preview').innerHTML = `
-      <img src="${prodImg}" class="rounded" width="35" height="35" style="object-fit:cover;">
+      <img src="${escapeHtml(prodImg)}" class="rounded" width="35" height="35" alt="" style="object-fit:cover;">
       <div class="small">
-        <a href="/product/${prod.id}" target="_blank" class="fw-bold text-dark text-decoration-none text-truncate d-block" style="max-width: 140px;">${prod.title}</a>
+        <a href="/product/${Number.isFinite(productId) ? productId : ''}" target="_blank" rel="noopener" class="fw-bold text-dark text-decoration-none text-truncate d-block" style="max-width: 140px;">${escapeHtml(prod.title || 'Sản phẩm')}</a>
         <span class="text-danger fw-bold">${PatuhiApp.formatPrice(prod.price)}</span>
       </div>
     `;
@@ -253,8 +279,9 @@ async function selectConversation(conversationId) {
     if (attachButton) attachButton.disabled = false;
     document.getElementById('message-input').focus();
 
-    // Render messages
-    if (!messages || messages.length === 0) {
+    // Render messages (ignore accidental copies of the chat page markup).
+    const visibleMessages = (messages || []).filter(message => !isChatPageMarkup(message.content));
+    if (visibleMessages.length === 0) {
       messagesContainer.innerHTML = `
         <div class="text-center py-5 text-muted">
           <p class="mb-0">Chưa có tin nhắn nào. Hãy gửi lời chào đầu tiên!</p>
@@ -262,10 +289,12 @@ async function selectConversation(conversationId) {
       `;
     } else {
       messagesContainer.innerHTML = '';
-      messages.forEach(m => appendMessage(m));
+      visibleMessages.forEach(m => appendMessage(m));
       scrollToBottom();
     }
+    await loadConversations();
     refreshReadStatus(conversationId);
+    PatuhiApp.updateNotificationCount();
     readStatusSyncTimer = setInterval(() => refreshReadStatus(conversationId), 2000);
   } catch (err) {
     if (Number(conversationId) !== Number(activeConversationId)) return;
@@ -319,6 +348,8 @@ function cancelImagePreview() {
 }
 
 function createMessageElement(message) {
+  if (isChatPageMarkup(message.content)) return null;
+
   const isMine = Number(message.sender_id) === Number(myUser.id);
   const messageId = Number(message.id);
   if (Number.isFinite(messageId) && document.getElementById(`message-${messageId}`)) return;
@@ -487,6 +518,27 @@ async function loadMoreMessages() {
   }
 }
 
+function setupChatSearch() {
+  const searchInput = document.getElementById('chat-search-input');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', () => {
+    applyConversationSearch();
+  });
+}
+
+function applyConversationSearch() {
+  const keyword = document.getElementById('chat-search-input')?.value.trim().toLocaleLowerCase('vi') || '';
+  document.querySelectorAll('.chat-conv-item').forEach((item) => {
+    const matches = !keyword || item.textContent.toLocaleLowerCase('vi').includes(keyword);
+    item.classList.toggle('d-none', !matches);
+  });
+}
+
+function backToConversations() {
+  document.body.classList.remove('chat-conversation-active');
+}
+
 function openChatImageModal(imageUrl) {
   const image = document.getElementById('chat-image-modal-content');
   const modalElement = document.getElementById('chatImageModal');
@@ -588,9 +640,41 @@ async function handleSendMessage(e) {
   }
 }
 
-function updateConversationLastMessage(convId, content) {
+function updateConversationLastMessage(convId, content, unreadCount = 0) {
   const el = document.getElementById(`conv-lastmsg-${convId}`);
-  if (el) el.innerText = content;
+  const item = document.getElementById(`conv-item-${convId}`);
+  if (!el || !item) return;
+
+  const unread = Number(unreadCount) || 0;
+  item.classList.toggle('has-unread', unread > 0);
+  if (unread > 0) {
+    el.textContent = `${unread} tin nhắn mới`;
+    el.classList.add('conversation-unread-label');
+    el.classList.remove('text-muted');
+    return;
+  }
+
+  el.textContent = getConversationPreview(content);
+  el.classList.remove('conversation-unread-label');
+  el.classList.add('text-muted');
+}
+
+function isChatPageMarkup(content) {
+  if (typeof content !== 'string') return false;
+  const markup = content
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .toLowerCase();
+  return /<div\b[^>]*\bid=["']chat-box-wrapper["']/.test(markup) &&
+    /\bid=["']messages-container["']/.test(markup) &&
+    /\bid=["']message-form["']/.test(markup);
+}
+
+function getConversationPreview(content) {
+  if (isChatPageMarkup(content)) return 'Tin nhắn không khả dụng';
+  return content || '...';
 }
 
 function scrollToBottom() {

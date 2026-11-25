@@ -169,6 +169,27 @@ main {
   box-shadow: 0 4px 10px rgba(255, 136, 0, 0.15);
 }
 
+.unread-message-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  color: #fff;
+  background: #e41e3f;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* "Đăng tin" CTA Button */
 #nav-auth-container a[href="/post"],
 #nav-auth-container a[href^="/login?redirect=/post"] {
