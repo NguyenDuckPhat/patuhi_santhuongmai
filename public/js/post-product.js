@@ -2,10 +2,22 @@ let editProductId = null;
 let selectedFiles = [];
 let removedImageIds = [];
 let currentPostStep = 1;
+let postDraftKey = null;
+let postDraftImageKey = null;
+let postDraftReady = false;
+let postDraftDatabasePromise = null;
+let postDraftImageWarningShown = false;
+const postDraftFieldIds = [
+  'post-category', 'post-category-other', 'post-title', 'post-brand', 'post-brand-other',
+  'post-model', 'post-model-other', 'post-condition', 'post-condition-other',
+  'post-price', 'post-phone', 'post-location', 'post-description'
+];
 const phoneBrandOptions = ['Apple', 'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Huawei', 'Sony'];
 const phoneModelOptions = ['iPhone', 'Galaxy', 'Redmi', 'OPPO A Series', 'Vivo V Series'];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.getElementById('post-product-form');
+  form.inert = true;
   // Kiểm tra đăng nhập
   const user = await PatuhiApp.checkAuth();
   if (!user) {
@@ -30,17 +42,133 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Kiểm tra xem có đang ở chế độ sửa tin không
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
+  postDraftKey = `patuhi:post-draft:${user.id}:${editId || 'new'}`;
+  postDraftImageKey = `${postDraftKey}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   if (editId) {
     editProductId = editId;
-    loadProductForEdit(editId);
+    await loadProductForEdit(editId);
   } else {
     // Tự điền số điện thoại nếu user có sẵn
     if (user.phone) {
       document.getElementById('post-phone').value = user.phone;
     }
   }
+  const draft = await restorePostDraft();
+  postDraftReady = true;
+  form.inert = false;
+  form.addEventListener('input', savePostDraft);
+  form.addEventListener('change', savePostDraft);
+  window.addEventListener('pagehide', savePostDraft);
+  document.getElementById('btn-cancel-post').addEventListener('click', async (event) => {
+    event.preventDefault();
+    await clearPostDraft();
+    window.location.href = '/';
+  });
   updatePostStepIndicators();
+  if (draft) {
+    requestAnimationFrame(() => window.scrollTo({ top: Number(draft.scrollY) || 0, behavior: 'instant' }));
+  }
 });
+
+// Nội dung lưu theo tab; IndexedDB giữ nguyên file ảnh mà không bị giới hạn dung lượng sessionStorage.
+function savePostDraft() {
+  if (!postDraftReady) return;
+  try {
+    sessionStorage.setItem(postDraftKey, JSON.stringify({
+      step: currentPostStep,
+      fields: Object.fromEntries(postDraftFieldIds.map((id) => [id, document.getElementById(id).value])),
+      removedImageIds,
+      imageKey: postDraftImageKey,
+      scrollY: window.scrollY
+    }));
+  } catch (error) {
+    console.warn('Không thể lưu tạm tin đăng:', error);
+  }
+}
+
+async function accessPostDraftImages(mode, action) {
+  if (!postDraftDatabasePromise) {
+    postDraftDatabasePromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open('patuhi-post-drafts', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('images');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  const database = await postDraftDatabasePromise;
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction('images', mode);
+    const request = action(transaction.objectStore('images'));
+    transaction.oncomplete = () => resolve(request.result);
+    transaction.onerror = transaction.onabort = () => reject(transaction.error || request.error);
+  });
+}
+
+async function savePostDraftImages() {
+  if (!postDraftReady) return;
+  const files = [...selectedFiles];
+  savePostDraft();
+  try {
+    await accessPostDraftImages('readwrite', (store) => files.length
+      ? store.put(files, postDraftImageKey)
+      : store.delete(postDraftImageKey));
+  } catch (error) {
+    console.warn('Không thể lưu tạm ảnh tin đăng:', error);
+    if (!postDraftImageWarningShown) {
+      PatuhiApp.showToast('Không thể lưu tạm ảnh. Bạn có thể cần chọn lại ảnh sau khi tải lại trang.', 'warning');
+      postDraftImageWarningShown = true;
+    }
+  }
+}
+
+async function restorePostDraft() {
+  let draft;
+  try {
+    draft = JSON.parse(sessionStorage.getItem(postDraftKey));
+  } catch (error) {
+    console.warn('Không thể đọc tin đăng đang nhập:', error);
+  }
+  if (!draft || !draft.fields) return null;
+
+  document.getElementById('post-category').value = draft.fields['post-category'] || '';
+  updateOtherCategoryField();
+  updateBrandModelOptions();
+  postDraftFieldIds.forEach((id) => {
+    if (typeof draft.fields[id] === 'string') document.getElementById(id).value = draft.fields[id];
+  });
+  toggleOtherProductField('brand');
+  toggleOtherProductField('model');
+  toggleOtherConditionField();
+  removedImageIds = Array.isArray(draft.removedImageIds) ? draft.removedImageIds : [];
+  removedImageIds.forEach((id) => document.getElementById(`exist-img-${id}`)?.remove());
+
+  if (typeof draft.imageKey === 'string') {
+    postDraftImageKey = draft.imageKey;
+    try {
+      const files = await accessPostDraftImages('readonly', (store) => store.get(postDraftImageKey));
+      selectedFiles = Array.isArray(files) ? files.filter((file) => file instanceof File) : [];
+    } catch (error) {
+      console.warn('Không thể khôi phục ảnh tin đăng:', error);
+    }
+  }
+  renderSelectedImages();
+  showPostStep([1, 2, 3, 4].includes(draft.step) ? draft.step : 1);
+  return draft;
+}
+
+async function clearPostDraft() {
+  postDraftReady = false;
+  try {
+    sessionStorage.removeItem(postDraftKey);
+  } catch (error) {
+    console.warn('Không thể xóa tin đăng lưu tạm:', error);
+  }
+  try {
+    await accessPostDraftImages('readwrite', (store) => store.delete(postDraftImageKey));
+  } catch (error) {
+    console.warn('Không thể xóa ảnh tin đăng lưu tạm:', error);
+  }
+}
 
 function updateOtherCategoryField() {
   const isOther = document.getElementById('post-category').value === 'other';
@@ -218,13 +346,18 @@ function getProductFieldValue(field) {
 
 function goToPostStep(step) {
   if (step > currentPostStep && !validatePostStep(currentPostStep)) return;
+  showPostStep(step);
+  savePostDraft();
+  document.getElementById('form-heading').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showPostStep(step) {
   if (step === 4) updatePostPreview();
   currentPostStep = step;
   document.querySelectorAll('.post-step').forEach((section) => {
     section.hidden = Number(section.dataset.step) !== step;
   });
   updatePostStepIndicators();
-  document.getElementById('form-heading').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function loadCategories() {
@@ -303,12 +436,12 @@ function markRemoveExistingImage(imgId) {
   removedImageIds.push(imgId);
   const elem = document.getElementById(`exist-img-${imgId}`);
   if (elem) elem.remove();
+  savePostDraft();
 }
 
 function handleImageSelection(input) {
   if (!input.files || input.files.length === 0) return;
 
-  const previewContainer = document.getElementById('new-images-preview');
   for (let i = 0; i < input.files.length; i++) {
     const file = input.files[i];
     const existingCount = document.querySelectorAll('#existing-images-container img').length;
@@ -318,25 +451,37 @@ function handleImageSelection(input) {
     }
     selectedFiles.push(file);
     document.getElementById('post-image-error').hidden = true;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const div = document.createElement('div');
-      div.className = 'preview-img-item';
-      div.innerHTML = `
-        <img src="${e.target.result}">
-        <button type="button" class="btn-remove-img" onclick="removeSelectedFile(${selectedFiles.length - 1}, this)">&times;</button>
-      `;
-      previewContainer.appendChild(div);
-    };
-    reader.readAsDataURL(file);
   }
+  renderSelectedImages();
+  savePostDraftImages();
   input.value = ''; // reset file input
 }
 
-function removeSelectedFile(index, btn) {
+function renderSelectedImages() {
+  const container = document.getElementById('new-images-preview');
+  container.querySelectorAll('img[data-preview-url]').forEach((image) => URL.revokeObjectURL(image.dataset.previewUrl));
+  container.replaceChildren();
+  selectedFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'preview-img-item';
+    const image = document.createElement('img');
+    image.dataset.previewUrl = URL.createObjectURL(file);
+    image.src = image.dataset.previewUrl;
+    image.alt = 'Ảnh sản phẩm';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-remove-img';
+    button.innerHTML = '&times;';
+    button.addEventListener('click', () => removeSelectedFile(index));
+    item.append(image, button);
+    container.appendChild(item);
+  });
+}
+
+function removeSelectedFile(index) {
   selectedFiles.splice(index, 1);
-  btn.closest('.preview-img-item').remove();
+  renderSelectedImages();
+  savePostDraftImages();
 }
 
 async function handleProductSubmit(event) {
@@ -407,6 +552,7 @@ async function handleProductSubmit(event) {
 
     const json = await res.json();
     if (res.ok) {
+      await clearPostDraft();
       PatuhiApp.showToast(json.message, 'success');
       setTimeout(() => {
         if (json.data && json.data.product) {
